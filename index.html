@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mush — Funghi e meteo dei Monti Simbruini</title>
+<meta name="description" content="Previsione di crescita dei funghi sui Monti Simbruini: modello a sei fattori, stazione meteo di Monte Livata, mappa nazionale e webcam in diretta.">
+<meta name="theme-color" content="#12100d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🍄</text></svg>">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+      integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
+      crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<!-- ==================== GATE DI ACCESSO ==================== -->
+<div id="gate" class="gate" hidden>
+  <div class="gate-card">
+    <div class="gate-mark">🍄</div>
+    <h1>Mush</h1>
+    <p class="gate-sub">Funghi, meteo e webcam dei Monti Simbruini</p>
+    <button id="btn-login" class="btn-google">
+      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
+        <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z"/>
+        <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.5 46 24 46z"/>
+        <path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.3-2.9.7-4.2v-5.7H4.5C2.9 17.3 2 20.5 2 24s.9 6.7 2.5 9.9l7.3-5.7z"/>
+        <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.1 29.9 2 24 2 15.5 2 8.1 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/>
+      </svg>
+      Accedi con Google
+    </button>
+    <p id="gate-err" class="gate-err" hidden></p>
+    <p class="gate-note">
+      Accesso riservato. I dati meteo restano pubblici sul repository:
+      il login serve a proteggere l'accesso al sito, non i file.
+    </p>
+  </div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div id="app" hidden>
+
+<header class="top">
+  <div class="brand"><span class="brand-mark">🍄</span> Mush</div>
+  <div class="top-right">
+    <span id="user" class="user"></span>
+    <button id="btn-logout" class="btn-ghost" type="button">Esci</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab is-on" data-view="previsione" role="tab">Previsione</button>
+  <button class="tab" data-view="mappa" role="tab">Mappa</button>
+  <button class="tab" data-view="webcam" role="tab">Webcam</button>
+  <button class="tab" data-view="meteo" role="tab">Meteo</button>
+  <button class="tab" data-view="modello" role="tab">Modello</button>
+</nav>
+
+<main>
+
+<!-- ---------- PREVISIONE ---------- -->
+<section id="v-previsione" class="view">
+  <div class="controls">
+    <label>Zona
+      <select id="sel-spot"></select>
+    </label>
+    <label>Specie
+      <select id="sel-specie"></select>
+    </label>
+  </div>
+
+  <div class="hero">
+    <div class="gauge-wrap">
+      <svg class="gauge" viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="gauge-bg" cx="60" cy="60" r="52"/>
+        <circle id="gauge-arc" class="gauge-arc" cx="60" cy="60" r="52"/>
+      </svg>
+      <div class="gauge-mid">
+        <div id="q-val" class="q-val">—</div>
+        <div class="q-of">su 10</div>
+      </div>
+    </div>
+    <div class="hero-txt">
+      <div id="q-label" class="q-label">—</div>
+      <p id="q-spot" class="q-spot"></p>
+      <p id="q-lim" class="q-lim"></p>
+      <p id="q-peak" class="q-peak"></p>
+    </div>
+  </div>
+
+  <h2>Prossimi 16 giorni</h2>
+  <div id="strip" class="strip"></div>
+
+  <h2>Perché questo punteggio</h2>
+  <div id="fattori" class="fattori"></div>
+
+  <h2>Confronto fra le zone</h2>
+  <div id="classifica" class="classifica"></div>
+</section>
+
+<!-- ---------- MAPPA ---------- -->
+<section id="v-mappa" class="view" hidden>
+  <div class="controls">
+    <label>Strato
+      <select id="sel-layer">
+        <option value="mush">Mush — modello a 6 fattori (Simbruini)</option>
+        <option value="mf">Meteo Funghi — griglia nazionale</option>
+      </select>
+    </label>
+  </div>
+  <div id="map"></div>
+  <div class="legend">
+    <span class="legend-label">Crescita</span>
+    <div class="legend-bar"></div>
+    <div class="legend-ticks"><span>Irrilevante</span><span>Appena favorevole</span><span>Molto favorevole</span></div>
+  </div>
+  <p id="map-src" class="muted small"></p>
+</section>
+
+<!-- ---------- WEBCAM ---------- -->
+<section id="v-webcam" class="view" hidden>
+  <p class="muted small">
+    Le immagini si caricano solo quando apri questa scheda o premi Aggiorna.
+    Nessun aggiornamento automatico.
+  </p>
+  <p class="muted small">Tocca un'immagine per vederla a tutto schermo.</p>
+  <div class="cam-actions">
+    <button id="btn-cams" class="btn" type="button">Aggiorna immagini</button>
+    <span id="cam-time" class="muted small"></span>
+  </div>
+  <div id="cams" class="cams"></div>
+
+  <div id="cams-off-wrap" hidden>
+    <h2>Non attive (<span id="cams-off-n"></span>)</h2>
+    <p class="muted small">
+      Impianti sciistici: rispondono ma servono un fotogramma fermo da mesi.
+      Lo stato viene ricontrollato a ogni aggiornamento dei dati: quando
+      ripartono tornano su, a dimensione piena, da sole.
+    </p>
+    <div id="cams-off" class="cams cams-off"></div>
+  </div>
+</section>
+
+<!-- ---------- METEO ---------- -->
+<section id="v-meteo" class="view" hidden>
+  <div class="controls">
+    <label>Zona
+      <select id="sel-meteo"></select>
+    </label>
+  </div>
+
+  <div id="staz-wrap">
+    <h2>Stazione al suolo — misurato</h2>
+    <div id="stazione" class="stazione"></div>
+  </div>
+
+  <h2>Modello — <span id="meteo-zona"></span></h2>
+  <div id="stat-modello" class="stazione"></div>
+
+  <h2>Pioggia e temperatura — 30 giorni + previsione</h2>
+  <div id="chart" class="chart"></div>
+  <p class="muted small">
+    Barre: pioggia giornaliera (mm). Linea: temperatura media (°C).
+    La parte a destra della linea tratteggiata è previsione.
+  </p>
+</section>
+
+<!-- ---------- MODELLO ---------- -->
+<section id="v-modello" class="view" hidden>
+  <h2>Come funziona il modello</h2>
+  <p>
+    Il fungo che raccogli non nasce il giorno in cui piove. La pioggia innesca il
+    micelio, poi servono da una a tre settimane perché il carpoforo emerga. Per
+    questo il punteggio di oggi dipende soprattutto dalla pioggia caduta
+    <strong>8–21 giorni fa</strong>, e dal fatto che nel frattempo il terreno non
+    si sia asciugato.
+  </p>
+  <p>
+    Sei fattori, ciascuno normalizzato fra 0 e 1, combinati con una
+    <strong>media geometrica pesata</strong>. La media geometrica è una scelta
+    precisa: se un fattore va a zero il punteggio crolla, che è il comportamento
+    reale. Una media aritmetica compenserebbe la siccità con una bella
+    temperatura, e non è così che funziona.
+  </p>
+  <div id="pesi" class="pesi"></div>
+  <h2>Specie e alberi ospiti</h2>
+  <p class="muted small">
+    Il numero accanto a ogni albero è l'affinità micorrizica, da 0 a 1.
+  </p>
+  <div id="specie-info" class="specie-info"></div>
+  <h2>Composizione dei boschi</h2>
+  <p class="muted small">
+    Stime per fascia altimetrica: faggeta sopra i 1000 m, castagno e querce
+    sotto, leccio sui versanti caldi dell'Aniene. Non è un rilievo forestale.
+  </p>
+  <div id="zone-bosco" class="specie-info"></div>
+  <h2>Sorgenti dei dati</h2>
+  <div id="sorgenti" class="sorgenti"></div>
+  <details class="disclaimer">
+    <summary>Limiti — leggi prima di fidarti</summary>
+    <ul>
+      <li>È un modello meteorologico, non una garanzia: non sa dove sono i tuoi
+          boschi, che alberi ci sono, com'è il suolo, né se qualcuno è già passato.</li>
+      <li>La griglia Meteo Funghi ha celle da 0,2° (circa 20 km): dice come sta la
+          zona, non il singolo versante.</li>
+      <li>La correzione con la stazione vale entro 8 km da Monte Livata. Più
+          lontano restano i dati del modello, che in montagna sbaglia parecchio.</li>
+      <li>Il punteggio dice se le <em>condizioni</em> sono favorevoli. Se il
+          micelio in quel bosco non c'è, non nasce niente comunque.</li>
+      <li><strong>Non usare questo sito per decidere se un fungo è commestibile.</strong>
+          Per quello serve un micologo della ASL.</li>
+    </ul>
+  </details>
+</section>
+
+</main>
+
+<footer class="foot">
+  <span id="foot-meta"></span>
+  <a href="https://github.com/hypegodsrome/mush">Codice</a>
+</footer>
+
+<dialog id="lb" class="lb">
+  <div class="lb-bar">
+    <div class="lb-txt"><b id="lb-title"></b><span id="lb-sub"></span></div>
+    <button id="lb-full" class="btn-ghost" type="button">Schermo intero</button>
+    <button id="lb-close" class="btn-ghost" type="button" aria-label="Chiudi">✕</button>
+  </div>
+  <img id="lb-img" alt="">
+</dialog>
+
+</div><!-- /app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+        integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>

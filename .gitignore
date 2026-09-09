@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Scarti delle ispezioni sulle sorgenti
+*.tmp
+st.html
+mf.js
+climalocalita.php_*.html
+grafici.php_*.html

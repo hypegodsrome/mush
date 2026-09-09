@@ -1,0 +1,58 @@
+name: Aggiorna dati e pubblica
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Ogni 6 ore. Meteo Funghi si aggiorna una volta al giorno, ma la stazione
+    # al suolo e' in tempo reale e sul sito si vede.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Una pubblicazione alla volta. Non annulla quelle in corso: meglio un deploy
+# in coda che un sito lasciato a meta'.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Controlli del modello
+        run: |
+          python scripts/growth.py
+          python scripts/build_data.py --selftest
+
+      - name: Genera i dati
+        env:
+          # Impostalo in Settings > Secrets and variables > Actions per
+          # attivare Windy. Senza, build_data.py salta quel pezzo e va avanti.
+          WINDY_KEY: ${{ secrets.WINDY_KEY }}
+        run: python scripts/build_data.py
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
