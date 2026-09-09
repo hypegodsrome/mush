@@ -123,11 +123,14 @@ Poi, nella console Firebase:
 Senza il secondo passo il login fallisce con `auth/unauthorized-domain`. Il sito
 lo dice esplicitamente nel messaggio d'errore.
 
-Chi può entrare si controlla con `EMAIL_AMMESSE` nello stesso file. È un
-cancello d'ingresso lato client, **non** una protezione dei dati: i JSON sono
-serviti in chiaro da GitHub Pages e chiunque abbia l'URL li può scaricare. Per
-un sito di funghi va bene; se un giorno ci metti qualcosa di privato, serve un
-backend vero.
+Chi può entrare si controlla con `EMAIL_AMMESSE` nello stesso file. **Ora è
+una lista vuota, cioè entra chiunque abbia un account Google e il link.** Per
+richiudere il sito basta elencare gli indirizzi ammessi.
+
+In entrambi i casi è un cancello d'ingresso lato client, **non** una protezione
+dei dati: i JSON sono serviti in chiaro da GitHub Pages e chiunque abbia
+l'indirizzo li può scaricare. Per un sito di funghi va bene; se un giorno ci
+metti qualcosa di privato, serve un backend vero.
 
 ### Windy (opzionale)
 
