@@ -83,11 +83,29 @@ async function carica() {
       <b>Registro non leggibile.</b><br>${esc(e.code || e.message)}
       ${spento ? "<br><br>Cloud Firestore non è ancora attivo su questo progetto. "
                  + "Attivalo dalla console Firebase, poi ricarica."
-        : permessi ? "<br><br>Le regole di Firestore hanno rifiutato la lettura. "
-                     + "Controlla che siano state pubblicate." : ""}
+        : permessi ? "<br><br>Le regole hanno rifiutato la lettura. "
+                     + "Le condizioni richieste sono qui sotto: quella che risulta "
+                     + "<b>no</b> è la causa." + await diagnosi()
+                   : ""}
     </div>`;
     $("#msg").textContent = "";
   }
+}
+
+/** Le regole concedono l'elenco solo se email e email_verified combaciano.
+ *  Senza vederli, un permission-denied resta un indovinello. */
+async function diagnosi() {
+  const u = auth.currentUser;
+  if (!u) return "<br><br>Nessun utente connesso.";
+  let claims = {};
+  try { claims = (await u.getIdTokenResult(true)).claims; } catch (e) { /* niente */ }
+  const si = (b) => (b ? "sì" : "<b>no</b>");
+  return `<br><br>
+    Indirizzo: <code>${esc(u.email)}</code><br>
+    È l'amministratore atteso (<code>${esc(EMAIL_ADMIN)}</code>): ${si(u.email === EMAIL_ADMIN)}<br>
+    Indirizzo verificato dal provider: ${si(claims.email_verified === true)}<br>
+    Regole pubblicate di recente: se hai appena fatto il deploy, attendi
+    qualche secondo e ricarica.`;
 }
 
 function disegna() {
