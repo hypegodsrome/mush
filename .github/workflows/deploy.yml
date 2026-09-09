@@ -42,6 +42,23 @@ jobs:
           WINDY_KEY: ${{ secrets.WINDY_KEY }}
         run: python scripts/build_data.py
 
+      # GitHub Pages serve gli asset con Cache-Control: max-age=600, quindi
+      # per dieci minuti dopo ogni pubblicazione i browser continuano a usare
+      # la copia vecchia del JavaScript. Con dati nuovi e codice vecchio si
+      # ottengono guasti che sembrano bug ma sono solo cache.
+      # Appendere la versione del commit rende l'indirizzo diverso a ogni
+      # deploy, quindi la cache non puo' rispondere.
+      # Il file HTML non ha bisogno di marcatura: e' lui a cambiare.
+      - name: Marca le risorse con la versione del commit
+        run: |
+          V="${GITHUB_SHA::8}"
+          sed -i "s#\"assets/app\.css\"#\"assets/app.css?v=$V\"#g; \
+                  s#\"assets/app\.js\"#\"assets/app.js?v=$V\"#g" index.html
+          sed -i "s#\"\./firebase-config\.js\"#\"./firebase-config.js?v=$V\"#g" assets/app.js
+          echo "Versione risorse: $V"
+          grep -o 'assets/app\.[a-z]*?v=[0-9a-f]*' index.html
+          grep -o 'firebase-config\.js?v=[0-9a-f]*' assets/app.js
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

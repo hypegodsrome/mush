@@ -21,13 +21,10 @@ export const firebaseConfig = {
   appId: "1:512648397417:web:7c2bb9edb5ba1e264958f8",
 };
 
-// Chi puo' entrare. Lista VUOTA = chiunque abbia un account Google, che e' la
-// configurazione attuale: il sito e' aperto a tutti quelli che hanno il link.
+// Il sito e' aperto: entra chiunque abbia un account Google e il link.
+// Non c'e' nessuna lista di indirizzi ammessi, per scelta.
 //
-// Per richiuderlo basta elencare gli indirizzi ammessi:
-//   export const EMAIL_AMMESSE = ["tuo@gmail.com", "altro@gmail.com"];
-//
-// In ogni caso e' un controllo lato client: vale come cancello d'ingresso
-// all'interfaccia, non come protezione dei dati, che restano pubblici in
-// data/*.json per chiunque conosca l'indirizzo.
-export const EMAIL_AMMESSE = [];
+// Per richiuderlo servirebbe rimettere un filtro in app.js, dentro
+// onAuthStateChanged. Ma sarebbe comunque un controllo lato client: tiene
+// fuori dall'interfaccia, non dai dati, che restano pubblici in data/*.json
+// per chiunque conosca l'indirizzo. Per una restrizione vera serve un backend.

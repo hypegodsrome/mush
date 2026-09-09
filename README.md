@@ -123,14 +123,24 @@ Poi, nella console Firebase:
 Senza il secondo passo il login fallisce con `auth/unauthorized-domain`. Il sito
 lo dice esplicitamente nel messaggio d'errore.
 
-Chi può entrare si controlla con `EMAIL_AMMESSE` nello stesso file. **Ora è
-una lista vuota, cioè entra chiunque abbia un account Google e il link.** Per
-richiudere il sito basta elencare gli indirizzi ammessi.
+**Il sito è aperto: entra chiunque abbia un account Google e il link.** Non
+c'è nessuna lista di indirizzi ammessi. C'era, ed è stata tolta del tutto
+invece di lasciarla vuota: con `Cache-Control: max-age=600` una copia vecchia
+del file avrebbe continuato a rifiutare gente per dieci minuti dopo ogni
+pubblicazione.
 
-In entrambi i casi è un cancello d'ingresso lato client, **non** una protezione
-dei dati: i JSON sono serviti in chiaro da GitHub Pages e chiunque abbia
-l'indirizzo li può scaricare. Per un sito di funghi va bene; se un giorno ci
-metti qualcosa di privato, serve un backend vero.
+Un filtro rimesso in `onAuthStateChanged` sarebbe comunque un controllo lato
+client: tiene fuori dall'interfaccia, non dai dati. I JSON sono serviti in
+chiaro da GitHub Pages e chiunque abbia l'indirizzo li può scaricare. Per una
+restrizione vera serve un backend.
+
+### Cache
+
+Gli asset escono con `Cache-Control: max-age=600`. Per non lasciare dieci
+minuti di codice vecchio con dati nuovi dopo ogni deploy, la CI appende la
+versione del commit agli indirizzi di `app.js`, `app.css` e
+`firebase-config.js`. L'indirizzo cambia a ogni pubblicazione, quindi la cache
+non può rispondere. L'HTML non è marcato: è lui a cambiare.
 
 ### Windy (opzionale)
 

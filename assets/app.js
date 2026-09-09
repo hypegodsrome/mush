@@ -1,4 +1,4 @@
-import { firebaseConfig, EMAIL_AMMESSE } from "./firebase-config.js";
+import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
@@ -148,14 +148,11 @@ if (!configurato && inLocale) {
   const provider = new GoogleAuthProvider();
   await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-  onAuthStateChanged(auth, (u) => {
-    if (!u) return mostraGate();
-    if (EMAIL_AMMESSE.length && !EMAIL_AMMESSE.includes(u.email)) {
-      signOut(auth);
-      return mostraGate(`L'indirizzo ${u.email} non è autorizzato.`);
-    }
-    apriApp(u);
-  });
+  // Nessuna lista di indirizzi: entra chiunque abbia un account Google.
+  // Il filtro c'era e l'ho tolto invece di lasciarlo con la lista vuota,
+  // perche' una copia vecchia del file in cache avrebbe continuato a
+  // rifiutare gente per dieci minuti dopo ogni pubblicazione.
+  onAuthStateChanged(auth, (u) => (u ? apriApp(u) : mostraGate()));
 
   // I due inciampi del primo deploy. Entrambi si risolvono in console, ma i
   // codici grezzi non dicono cosa fare, quindi lo diciamo noi.
