@@ -13,12 +13,12 @@
 //   firebase apps:create WEB mush --project ecosite-34d60
 
 export const firebaseConfig = {
-  apiKey: "DA_COMPILARE",
+  apiKey: "AIzaSyCgYIBNbJyAh-i2eXlXzzOPwVU6EQGCplQ",
   authDomain: "ecosite-34d60.firebaseapp.com",
   projectId: "ecosite-34d60",
   storageBucket: "ecosite-34d60.firebasestorage.app",
-  messagingSenderId: "DA_COMPILARE",
-  appId: "DA_COMPILARE",
+  messagingSenderId: "512648397417",
+  appId: "1:512648397417:web:7c2bb9edb5ba1e264958f8",
 };
 
 // Solo questi indirizzi possono entrare. Lista vuota = chiunque abbia un
