@@ -6,6 +6,38 @@
 <title>Mush — Funghi e meteo dei Monti Simbruini</title>
 <meta name="description" content="Previsione di crescita dei funghi sui Monti Simbruini: modello a sei fattori, stazione meteo di Monte Livata, mappa nazionale e webcam in diretta.">
 <meta name="theme-color" content="#12100d">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex, nofollow">
+
+<!--
+  GitHub Pages serve file statici e non lascia impostare header HTTP, quindi la
+  CSP va in un meta. Due limiti che ne derivano, e che nessun meta puo' coprire:
+  `frame-ancestors` e X-Frame-Options funzionano solo come header veri, percio'
+  l'incorporamento in iframe altrui non e' bloccabile da qui.
+
+  Lo script del tema e' ammesso per hash, non con 'unsafe-inline': cosi' resta
+  l'unico inline eseguibile. Se lo modifichi cambia l'hash e la pagina smette
+  di applicare il tema, quindi build_data.py --selftest ricalcola l'hash e fa
+  fallire la build se non combacia piu'.
+
+  'unsafe-inline' su style-src invece serve davvero: l'interfaccia scrive
+  attributi style (larghezze delle barre, colori del punteggio) e non esiste
+  ancora un supporto diffuso per gli hash sugli attributi.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self' 'sha256-XvLodVoMPG0Js/HYI48vpW83rUHQc2FC4yy0pWnwBG4=' https://cdnjs.cloudflare.com https://www.gstatic.com;
+  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+  img-src 'self' data: https:;
+  font-src 'self';
+  connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com;
+  frame-src https://g0.ipcamlive.com https://ecosite-34d60.firebaseapp.com;
+  form-action 'none';
+  base-uri 'self';
+  object-src 'none';
+  manifest-src 'self';
+  upgrade-insecure-requests
+">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🍄</text></svg>">
 <script>
   // Prima del CSS, di proposito: se il tema lo decidesse app.js la pagina
@@ -100,6 +132,8 @@
     </div>
   </div>
 
+  <div id="clima"></div>
+
   <h2>Prossimi 16 giorni</h2>
   <div id="strip" class="strip"></div>
 
@@ -168,6 +202,14 @@
 
   <h2>Modello — <span id="meteo-zona"></span></h2>
   <div id="stat-modello" class="stazione"></div>
+
+  <h2>Pioggia passata: le fonti a confronto</h2>
+  <p class="muted small">
+    Il modello non si fida di una fonte sola. Tre serie indipendenti sullo
+    stesso periodo, fuse giorno per giorno con la mediana. Se litigano fra loro,
+    il punteggio di quei giorni vale meno.
+  </p>
+  <div id="fonti" class="stazione"></div>
 
   <h2>Pioggia e temperatura — 30 giorni + previsione</h2>
   <div id="chart" class="chart"></div>

@@ -146,6 +146,58 @@ riparte torna su a dimensione piena da sola, senza toccare niente.
 Si caricano **solo** all'apertura della scheda o premendo Aggiorna: nessun
 `setInterval`, nessun polling. Un tocco sull'immagine la apre a tutto schermo.
 
+## Sicurezza
+
+Prima le cose che **non** si possono fare, perché contano più di quelle fatte.
+
+GitHub Pages serve file statici da una CDN. Non c'è un server, quindi:
+
+- **Non è possibile limitare le richieste né bloccare i bot.** Nessun rate
+  limit, nessun challenge, nessun blocco per IP. Un limite scritto nel
+  JavaScript lo si aggira con un `curl`. `robots.txt` lo rispettano solo i
+  crawler educati. Per un blocco vero serve un CDN davanti al sito
+  (Cloudflare con dominio personalizzato, oppure spostarsi su un host con
+  regole edge).
+- **Non è possibile impostare header HTTP.** Niente `X-Frame-Options`, niente
+  `frame-ancestors`, niente `Permissions-Policy`: quelle direttive esistono
+  solo come header veri. La CSP sta in un `<meta>`, che copre tutto il resto
+  ma non quelle.
+- **I dati sono pubblici.** `data/*.json` è scaricabile da chiunque conosca
+  l'indirizzo. Il login protegge l'interfaccia, non i file. Non esiste modo di
+  cambiarlo restando su hosting statico.
+
+Quindi: **"sicuro al 100%" non è una condizione raggiungibile**, qui come
+altrove. Quello che si può fare è ridurre la superficie, ed è stato fatto.
+
+| Misura | Dove |
+|---|---|
+| CSP con `default-src 'none'`, tutto in allowlist | `<meta>` in `index.html` |
+| Script inline ammesso per **hash**, non `unsafe-inline` | idem |
+| Hash verificato a ogni build, altrimenti fallisce | `verifica_csp()` |
+| SRI sugli script da CDN | `index.html` |
+| Iframe di terzi in `sandbox`, senza `allow-same-origin` | `schedaCam()` |
+| `referrerpolicy="no-referrer"` su webcam e iframe | idem |
+| Ogni stringa passata all'HTML viene escapata | `esc()` |
+| Nessun segreto nel client (la chiave Windy sta in un Secret) | `build_data.py` |
+| Versioni CDN fissate esatte, mai `@latest` | `index.html` |
+| `noindex, nofollow` e `robots.txt` | `index.html`, `robots.txt` |
+
+`style-src` tiene `'unsafe-inline'` perché l'interfaccia scrive attributi
+`style` (larghezze delle barre, colori del punteggio) e gli hash sugli
+attributi non sono ancora supportati in modo diffuso. È una concessione nota,
+non una svista.
+
+### Da fare in console, non dal codice
+
+1. **Limita la chiave API Firebase per referrer.**
+   [Credenziali Google Cloud](https://console.cloud.google.com/apis/credentials?project=ecosite-34d60)
+   → la chiave del browser → *Restrizioni applicazione* → *Siti web* → aggiungi
+   `hypegodsrome.github.io/*`. Senza questo la chiave è usabile da qualsiasi
+   sito; con questo, no.
+2. **Se un giorno aggiungi Firestore**, attiva **App Check** e scrivi regole di
+   sicurezza restrittive. `EMAIL_AMMESSE` è un controllo lato client: tiene
+   fuori dall'interfaccia, non dai dati.
+
 ## Limiti
 
 È un modello meteorologico. Non sa dove sono i tuoi boschi, che alberi ci sono

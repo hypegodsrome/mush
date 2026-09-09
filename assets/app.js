@@ -277,6 +277,8 @@ function renderPrevisione() {
     : `Meglio fra <strong>${d} giorni</strong>: ${esc(dow(p.data))} ${gg(p.data)}, `
       + `punteggio ${p.q.toFixed(1).replace(".", ",")}.`;
 
+  $("#clima").innerHTML = rigaClima(s);
+
   // strip
   const max = Math.max(1, ...sp.prossimi.map((x) => x.q));
   $("#strip").innerHTML = sp.prossimi.map((x, i) => `
@@ -305,6 +307,28 @@ function renderPrevisione() {
     }).join("") + dettagliOggi(oggi);
 
   renderClassifica();
+}
+
+/** Il cumulato in millimetri da solo non dice niente: 39 mm sono tanti o
+ *  pochi? La risposta e' il confronto con gli stessi 60 giorni degli ultimi
+ *  anni, ed e' l'informazione che spiega il punteggio meglio di ogni altra. */
+function rigaClima(s) {
+  const c = s.clima;
+  if (!c) return "";
+  const pct = c.rapporto == null ? null : Math.round(c.rapporto * 100);
+  const grave = c.percentile <= 20;
+  const posizione = c.anni_piu_secchi === 0
+    ? `i più secchi degli ultimi ${c.anni} anni`
+    : `più secchi di ${c.anni - c.anni_piu_secchi} anni su ${c.anni}`;
+
+  return `<div class="clima${grave ? " is-grave" : ""}">
+    <b>${c.pioggia_ora.toFixed(0)} mm</b> negli ultimi ${c.finestra_giorni} giorni,
+    contro una norma di <b>${c.pioggia_norma.toFixed(0)} mm</b>${pct == null ? ""
+      : ` — il <b>${pct}%</b>`}.
+    Sono ${posizione} (storico ${c.pioggia_min.toFixed(0)}–${c.pioggia_max.toFixed(0)} mm).
+    ${c.temp_scarto == null ? "" : `Temperatura ${c.temp_scarto > 0 ? "sopra" : "sotto"}
+      la media di <b>${Math.abs(c.temp_scarto).toFixed(1)} °C</b>.`}
+  </div>`;
 }
 
 function dettagliOggi(o) {
@@ -421,9 +445,17 @@ const camsVive = () => (stato.dati.webcam?.cam || []).filter((c) => c.viva);
 const camsSpente = () => (stato.dati.webcam?.cam || []).filter((c) => !c.viva);
 
 function schedaCam(c, piccola) {
+  // sandbox: lo stream e' di terzi e gira in un iframe. Gli si concede lo
+  // stretto necessario per riprodurre il video, niente popup, niente moduli,
+  // niente accesso al nostro contesto (`allow-same-origin` assente apposta).
+  // referrerpolicy: le webcam non hanno bisogno di sapere da quale pagina
+  // arrivi la richiesta.
   const media = c.iframe
-    ? `<iframe class="cam-shot" loading="lazy" allowfullscreen title="${esc(c.nome)}"></iframe>`
-    : `<img class="cam-shot" alt="${esc(c.nome)}" loading="lazy" decoding="async">`;
+    ? `<iframe class="cam-shot" loading="lazy" allowfullscreen title="${esc(c.nome)}"
+         referrerpolicy="no-referrer"
+         sandbox="allow-scripts allow-presentation"></iframe>`
+    : `<img class="cam-shot" alt="${esc(c.nome)}" loading="lazy" decoding="async"
+         referrerpolicy="no-referrer">`;
   return `<figure class="cam${piccola ? " is-off" : ""}" data-id="${esc(c.id)}">
       <figcaption class="cam-head">
         <span class="cam-name">${esc(c.nome)}</span>
@@ -528,7 +560,40 @@ function renderMeteo() {
   $("#staz-wrap").hidden = !(stato.dati.stazione && s.rh_stazione != null);
   renderStazione();
   renderStatModello(s);
+  renderFonti(s);
   renderChart(s);
+}
+
+const ETICHETTE_FONTI = {
+  modello:  ["Modello operativo", "previsione corrente, parte passata"],
+  era5:     ["ERA5", "rianalisi, cella ~25 km"],
+  alta_ris: ["Alta risoluzione", "archivio previsioni, cella più fine"],
+};
+
+function renderFonti(s) {
+  const f = s.pioggia_fonti;
+  if (!f || !f.totali_per_fonte) { $("#fonti").innerHTML = ""; return; }
+  const tot = f.totali_per_fonte;
+  const vals = Object.values(tot);
+  const spread = Math.max(...vals) - Math.min(...vals);
+  const minTot = Math.min(...vals);
+
+  $("#fonti").innerHTML = Object.entries(tot)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => {
+      const [nome, sub] = ETICHETTE_FONTI[k] || [k, ""];
+      return `<div class="obs"><div class="obs-k">${esc(nome)}</div>
+        <div class="obs-v">${v.toFixed(0)} <small>mm</small></div>
+        <div class="obs-sub">${esc(sub)}</div></div>`;
+    }).join("")
+    + `<p class="muted small" style="grid-column:1/-1;margin:.2rem 0 0">
+        Totali sul periodo passato. Divergenza fra la più asciutta e la più
+        piovosa: <strong>${spread.toFixed(0)} mm</strong>${minTot > 0
+          ? `, cioè il ${Math.round(100 * spread / minTot)}% della più bassa` : ""}.
+        ${f.giorni_fusi} giorni fusi, scarto medio giornaliero
+        ${String(f.scarto_medio ?? "n/d").replace(".", ",")} mm (massimo
+        ${String(f.scarto_max ?? "n/d").replace(".", ",")} mm).
+      </p>`;
 }
 
 const OGGI_I = (s) => s.meteo.giorni.indexOf(stato.dati.giorno);

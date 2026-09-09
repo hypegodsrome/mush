@@ -224,6 +224,19 @@ select {
 .q-lim, .q-peak { font-size: 0.86rem; color: var(--ink-2); margin-bottom: 0.35rem; }
 .q-lim strong, .q-peak strong { color: var(--ink); font-weight: 600; }
 
+/* ---------- confronto con la norma ---------- */
+.clima {
+  margin-top: 0.9rem;
+  background: var(--card); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-2);
+  border-radius: 10px; padding: 0.75rem 0.95rem;
+  font-size: 0.87rem; color: var(--ink-2);
+}
+.clima.is-grave { border-left-color: var(--danger); }
+.clima b { color: var(--ink); font-weight: 650; }
+
+.obs-sub { font-size: 0.68rem; color: var(--ink-3); margin-top: 0.2rem; }
+
 /* ---------- strip 16 giorni ---------- */
 .strip {
   display: grid;

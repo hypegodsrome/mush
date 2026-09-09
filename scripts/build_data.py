@@ -21,7 +21,7 @@ import re
 import sys
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -33,6 +33,10 @@ DATA = os.path.join(ROOT, "data")
 UA = "Mozilla/5.0 (compatible; mush-bot/1.0; +https://github.com/hypegodsrome/mush)"
 METEOFUNGHI = "https://meteofunghi.fungocenter.it/embed"
 OPENMETEO = "https://api.open-meteo.com/v1/forecast"
+ARCHIVIO = "https://archive-api.open-meteo.com/v1/archive"
+STORICO_MODELLI = "https://historical-forecast-api.open-meteo.com/v1/forecast"
+ANNI_CLIMA = 15          # per la norma stagionale
+FINESTRA_CLIMA = 60      # giorni su cui si confronta il cumulato con la norma
 WINDY = "https://api.windy.com/api/point-forecast/v2"
 STAZIONE = "https://meteoregionelazio.it/rete/stazione.php"
 STAZIONE_ID = "RM-175"                      # Monte Livata - Centro Visite Simbruini
@@ -377,6 +381,174 @@ def fetch_openmeteo(spots):
 
 
 # --------------------------------------------------------------------------
+# Pioggia passata da piu' fonti
+#
+# La pioggia e' il fattore che pesa di piu' nel modello, e una fonte sola non
+# basta: per giugno-settembre 2026 su Livata ERA5 dava 115 mm e l'archivio dei
+# modelli ad alta risoluzione 78 mm. Il 47% di scarto. Prendere l'una o l'altra
+# a caso significa sbagliare il fattore dominante senza accorgersene.
+#
+# Tre fonti indipendenti sul passato:
+#   modello   endpoint forecast con past_days - il modello operativo corrente
+#   era5      rianalisi ERA5, cella ~25 km, ritardo di qualche giorno
+#   alta_ris  archivio delle previsioni ad alta risoluzione, cella piu' fine
+#
+# Si fondono con la MEDIANA, non con la media: con tre valori la mediana ignora
+# l'outlier invece di farsi tirare da lui. Con due sole fonti disponibili la
+# mediana coincide con la media, e va bene lo stesso.
+# --------------------------------------------------------------------------
+
+def _daily_multi(base, spots, extra):
+    """Chiamata multi-punto: gli endpoint accettano liste di coordinate e
+    rispondono con un array nello stesso ordine."""
+    q = urllib.parse.urlencode({
+        "latitude": ",".join(str(s["lat"]) for s in spots),
+        "longitude": ",".join(str(s["lon"]) for s in spots),
+        "timezone": "Europe/Rome",
+        **extra,
+    })
+    raw = json.loads(_get(f"{base}?{q}", timeout=180).decode())
+    return raw if isinstance(raw, list) else [raw]
+
+
+def fetch_fonti_passato(spots, da, a):
+    """Serie giornaliere di pioggia dalle fonti indipendenti dal modello
+    operativo. Ogni fonte che fallisce viene semplicemente saltata."""
+    fonti = {}
+    tentativi = [
+        ("era5", ARCHIVIO, {"daily": "precipitation_sum", "models": "era5",
+                            "start_date": da, "end_date": a}),
+        ("alta_ris", STORICO_MODELLI, {"daily": "precipitation_sum",
+                                       "start_date": da, "end_date": a}),
+    ]
+    for nome, base, extra in tentativi:
+        try:
+            risp = _daily_multi(base, spots, extra)
+            if len(risp) != len(spots):
+                raise RuntimeError(f"{len(risp)} punti su {len(spots)}")
+            fonti[nome] = [
+                dict(zip(r["daily"]["time"], r["daily"]["precipitation_sum"]))
+                for r in risp
+            ]
+        except Exception as e:
+            print(f"[warn] fonte {nome}: {e}", file=sys.stderr)
+    return fonti
+
+
+def _mediana(v):
+    v = sorted(v)
+    n = len(v)
+    return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2.0
+
+
+def fondi_pioggia(d, per_fonte, oggi):
+    """Sostituisce la pioggia con la mediana fra le fonti, giorno per giorno.
+
+    Tocca solo il passato: sul futuro esiste una fonte sola, ed e' giusto cosi'.
+    Ritorna quanto le fonti sono d'accordo, che e' informazione da mostrare:
+    se litigano, il punteggio di quei giorni vale meno.
+    """
+    orig = list(d["precipitation_sum"])
+    scarti, usati, n_fonti = [], 0, {}
+
+    for i, g in enumerate(d["time"]):
+        if g > oggi:
+            continue
+        vals = [orig[i]] if orig[i] is not None else []
+        for nome, mappa in per_fonte.items():
+            v = mappa.get(g)
+            if v is not None:
+                vals.append(v)
+        n_fonti[len(vals)] = n_fonti.get(len(vals), 0) + 1
+        if len(vals) < 2:
+            continue
+        d["precipitation_sum"][i] = _mediana(vals)
+        usati += 1
+        scarti.append(max(vals) - min(vals))
+
+    tot = {nome: round(sum(v for g, v in m.items()
+                           if g <= oggi and v is not None), 1)
+           for nome, m in per_fonte.items()}
+    tot["modello"] = round(sum(v for g, v in zip(d["time"], orig)
+                               if g <= oggi and v is not None), 1)
+    return {
+        "fonti": sorted(list(per_fonte) + ["modello"]),
+        "giorni_fusi": usati,
+        "totali_per_fonte": tot,
+        "scarto_medio": round(sum(scarti) / len(scarti), 2) if scarti else None,
+        "scarto_max": round(max(scarti), 1) if scarti else None,
+    }
+
+
+# --------------------------------------------------------------------------
+# Climatologia
+# --------------------------------------------------------------------------
+
+def fetch_clima(spots, oggi, anni=ANNI_CLIMA):
+    """Norma stagionale da ERA5: quanto e' piovuto nella STESSA finestra di
+    calendario negli ultimi `anni` anni.
+
+    Serve a rispondere alla domanda che un cercatore si fa davvero: non
+    "quanti millimetri sono caduti", ma "e' poco o tanto per il periodo".
+    """
+    fine = datetime.fromisoformat(oggi).date()
+    inizio = date(fine.year - anni, 1, 1)
+    risp = _daily_multi(ARCHIVIO, spots, {
+        "daily": "precipitation_sum,temperature_2m_mean",
+        "start_date": inizio.isoformat(), "end_date": (fine - timedelta(days=1)).isoformat(),
+    })
+    if len(risp) != len(spots):
+        raise RuntimeError(f"clima: {len(risp)} punti su {len(spots)}")
+
+    out = []
+    for r in risp:
+        dd = r["daily"]
+        pio = dict(zip(dd["time"], dd["precipitation_sum"]))
+        tmp = dict(zip(dd["time"], dd["temperature_2m_mean"]))
+        cumuli, temp_medie = [], []
+        for anno in range(fine.year - anni, fine.year):
+            f = date(anno, fine.month, min(fine.day, 28))
+            giorni = [(f - timedelta(days=k)).isoformat() for k in range(FINESTRA_CLIMA)]
+            v = [pio.get(g) for g in giorni]
+            t = [tmp.get(g) for g in giorni]
+            if all(x is not None for x in v):
+                cumuli.append(sum(v))
+            t = [x for x in t if x is not None]
+            if t:
+                temp_medie.append(sum(t) / len(t))
+        out.append({
+            "anni": len(cumuli),
+            "finestra_giorni": FINESTRA_CLIMA,
+            "pioggia_norma": round(sum(cumuli) / len(cumuli), 1) if cumuli else None,
+            "pioggia_min": round(min(cumuli), 1) if cumuli else None,
+            "pioggia_max": round(max(cumuli), 1) if cumuli else None,
+            "storico": sorted(round(c, 1) for c in cumuli),
+            "temp_norma": round(sum(temp_medie) / len(temp_medie), 1) if temp_medie else None,
+        })
+    return out
+
+
+def confronta_clima(clima, pioggia_ora, temp_ora):
+    """Posiziona l'anno in corso dentro la distribuzione degli anni passati."""
+    if not clima or clima["pioggia_norma"] is None:
+        return None
+    st = clima["storico"]
+    sotto = sum(1 for c in st if c < pioggia_ora)
+    return {
+        **clima,
+        "pioggia_ora": round(pioggia_ora, 1),
+        "rapporto": round(pioggia_ora / clima["pioggia_norma"], 2)
+                    if clima["pioggia_norma"] else None,
+        # Quanti degli anni passati sono stati piu' secchi di questo.
+        "percentile": round(100 * sotto / len(st)) if st else None,
+        "anni_piu_secchi": sotto,
+        "temp_ora": None if temp_ora is None else round(temp_ora, 1),
+        "temp_scarto": None if (temp_ora is None or clima["temp_norma"] is None)
+                       else round(temp_ora - clima["temp_norma"], 1),
+    }
+
+
+# --------------------------------------------------------------------------
 # Windy (opzionale)
 # --------------------------------------------------------------------------
 
@@ -410,9 +582,26 @@ def build_spots(oggi, stazione=None):
     if len(meteo) != len(SPOTS):
         raise RuntimeError(f"Open-Meteo ha risposto per {len(meteo)} punti su {len(SPOTS)}")
 
+    # Fonti indipendenti sul passato, sulla stessa finestra del modello.
+    primo = meteo[0]["daily"]["time"][0]
+    fonti = fetch_fonti_passato(SPOTS, primo, oggi)
+
+    # La norma stagionale non e' indispensabile: se cade, il sito perde il
+    # confronto con gli anni passati ma i punteggi restano.
+    try:
+        clima = fetch_clima(SPOTS, oggi)
+    except Exception as e:
+        print(f"[warn] clima: {e}", file=sys.stderr)
+        clima = [None] * len(SPOTS)
+
     out = []
-    for spot, m in zip(SPOTS, meteo):
+    for idx, (spot, m) in enumerate(zip(SPOTS, meteo)):
         d = m["daily"]
+
+        # Ordine voluto: prima si fondono le fonti modellistiche fra loro, poi
+        # la stazione corregge il risultato. La misura a terra e' l'autorita'
+        # piu' alta e deve avere l'ultima parola.
+        fusione = fondi_pioggia(d, {n: v[idx] for n, v in fonti.items()}, oggi)
 
         # Correzione con la misura a terra, solo dove la stazione e' vicina
         # abbastanza da essere rappresentativa.
@@ -445,12 +634,22 @@ def build_spots(oggi, stazione=None):
                 "prossimi": futuro[:16],
             }
 
+        # Cumulato della finestra climatica, dopo fusione e correzione:
+        # va confrontato con la norma lo stesso dato che alimenta il modello.
+        i_oggi = d["time"].index(oggi) if oggi in d["time"] else len(d["time"]) - 1
+        da = max(0, i_oggi - FINESTRA_CLIMA + 1)
+        pio_ora = sum(v or 0 for v in d["precipitation_sum"][da:i_oggi + 1])
+        t_ora = [v for v in d["temperature_2m_mean"][da:i_oggi + 1] if v is not None]
+
         out.append({
             **spot,
             "quota_dem": m.get("elevation"),
             "km_stazione": round(dist, 1),
             "bias_pioggia": k,
             "rh_stazione": rh_st,
+            "pioggia_fonti": fusione,
+            "clima": confronta_clima(clima[idx], pio_ora,
+                                     sum(t_ora) / len(t_ora) if t_ora else None),
             "specie": specie,
             "meteo": {
                 "giorni": d["time"],
@@ -517,8 +716,13 @@ def main():
     try:
         spots = build_spots(oggi, stazione)
         _write("spots.json", {"giorno": oggi, "spots": spots})
+        f0 = spots[0]["pioggia_fonti"]
         meta["sorgenti"]["openmeteo"] = {
             "stato": "ok", "spots": len(spots),
+            "fonti_passato": f0["fonti"],
+            "giorni_fusi": f0["giorni_fusi"],
+            "scarto_medio_mm": f0["scarto_medio"],
+            "clima_anni": (spots[0].get("clima") or {}).get("anni"),
             # k=1.0 significa "confrontato con la stazione, nessuno scarto":
             # elencarlo come corretto sarebbe fuorviante.
             "bias_pioggia": {s["id"]: s["bias_pioggia"] for s in spots
@@ -568,7 +772,43 @@ def _write(nome, obj):
     print(f"  scritto {nome} ({os.path.getsize(p)/1024:.1f} KB)")
 
 
+def verifica_csp():
+    """La CSP ammette lo script inline del tema per hash. Se qualcuno lo
+    modifica senza aggiornare l'hash, il browser lo blocca in silenzio: niente
+    errore visibile, solo il tema che smette di funzionare. Meglio accorgersene
+    qui e far fallire la build."""
+    import base64
+    import hashlib
+
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    inline = re.findall(r"<script>(.*?)</script>", html, re.S)
+    if len(inline) != 1:
+        raise AssertionError(f"attesi 1 script inline, trovati {len(inline)}: "
+                             "aggiorna la CSP e questo controllo")
+
+    atteso = "sha256-" + base64.b64encode(
+        hashlib.sha256(inline[0].encode("utf-8")).digest()).decode()
+
+    csp = re.search(r'http-equiv="Content-Security-Policy"\s+content="(.*?)"', html, re.S)
+    if not csp:
+        raise AssertionError("meta Content-Security-Policy assente da index.html")
+    if atteso not in csp.group(1):
+        raise AssertionError(
+            f"hash CSP non aggiornato.\n  atteso in index.html: '{atteso}'\n"
+            "  sostituiscilo nel meta Content-Security-Policy.")
+
+    # Direttive che non devono sparire in una modifica distratta.
+    for d in ("default-src 'none'", "object-src 'none'", "base-uri 'self'",
+              "form-action 'none'"):
+        if d not in csp.group(1):
+            raise AssertionError(f"direttiva CSP mancante: {d}")
+
+    print(f"  CSP: hash dello script inline verificato ({atteso[:24]}...)")
+
+
 def selftest():
+    verifica_csp()
+
     """Controlli sulla correzione di bias: e' l'unico punto dove i dati
     vengono riscritti, quindi e' l'unico che merita una rete."""
     def serie(mm_al_giorno, giorni=20):
@@ -597,6 +837,36 @@ def selftest():
     assert bias_pioggia(serie(0.0), {"pioggia_mese": 50.0}, oggi) is None, "non si scala uno zero"
     assert bias_pioggia(serie(4.0), {"pioggia_mese": 20.0}, "2026-09-02") is None, \
         "inizio mese: campione troppo corto"
+
+    # Fusione fra fonti: con tre valori vince la mediana, che ignora l'outlier
+    # invece di farsi tirare da lui come farebbe la media.
+    assert _mediana([1, 100, 3]) == 3
+    assert _mediana([2, 4]) == 3
+    d = {"time": ["2026-09-08", "2026-09-09", "2026-09-10"],
+         "precipitation_sum": [10.0, 10.0, 10.0]}
+    r = fondi_pioggia(d, {"era5": {"2026-09-08": 2.0, "2026-09-09": 2.0},
+                          "alta_ris": {"2026-09-08": 3.0, "2026-09-09": 3.0}},
+                      "2026-09-09")
+    assert d["precipitation_sum"][:2] == [3.0, 3.0], d["precipitation_sum"]
+    assert d["precipitation_sum"][2] == 10.0, "il futuro ha una fonte sola, non si tocca"
+    assert r["giorni_fusi"] == 2 and r["scarto_max"] == 8.0
+
+    # Una fonte sola non e' una fusione: il valore deve restare intatto.
+    d2 = {"time": ["2026-09-08"], "precipitation_sum": [7.0]}
+    assert fondi_pioggia(d2, {}, "2026-09-09")["giorni_fusi"] == 0
+    assert d2["precipitation_sum"] == [7.0]
+
+    # I buchi di una fonte non devono contare come zero.
+    d3 = {"time": ["2026-09-08"], "precipitation_sum": [8.0]}
+    fondi_pioggia(d3, {"era5": {"2026-09-08": None}}, "2026-09-09")
+    assert d3["precipitation_sum"] == [8.0], "un None non e' una misura"
+
+    # Confronto con la norma: posiziona l'anno dentro la distribuzione.
+    c = {"pioggia_norma": 100.0, "storico": [50.0, 80.0, 120.0, 150.0], "temp_norma": 15.0}
+    r = confronta_clima(c, 60.0, 17.0)
+    assert r["rapporto"] == 0.6 and r["anni_piu_secchi"] == 1 and r["percentile"] == 25
+    assert r["temp_scarto"] == 2.0
+    assert confronta_clima(None, 10, 10) is None
 
     # Distanze: la stazione e' a Livata, Camerata Nuova e' fuori raggio.
     assert _km(STAZIONE_LATLON, (41.9386, 13.1529)) < 1.0

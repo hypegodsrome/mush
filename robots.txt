@@ -1,0 +1,13 @@
+# Sito personale: niente da indicizzare.
+#
+# Questo file lo rispettano solo i crawler educati. GitHub Pages serve file
+# statici da una CDN: non c'e' nessun server dove applicare un limite di
+# richieste, quindi un bot che ignora robots.txt non e' fermabile da qui.
+# Per un blocco vero servirebbe un CDN davanti al sito con regole di rate
+# limiting (vedi la sezione Sicurezza del README).
+
+User-agent: *
+Disallow: /
+
+# I dati sono comunque pubblici: chi ha l'indirizzo puo' scaricarli.
+Disallow: /data/
