@@ -123,10 +123,14 @@ function mostraGate(msg) {
   if (msg) { $("#gate-err").hidden = false; $("#gate-err").textContent = msg; }
 }
 
-function apriApp(utente) {
+function apriApp(utente, opz = {}) {
   $("#gate").hidden = true;
   $("#app").hidden = false;
   $("#user").textContent = utente?.email || "modalità sviluppo";
+  // Il collegamento all'amministrazione compare solo a chi la puo' usare.
+  // Non e' una misura di sicurezza - chi conosce l'indirizzo ci arriva
+  // comunque, e a quel punto sono le regole di Firestore a fermarlo.
+  $("#link-adm").hidden = !opz.admin;
   // Senza questo catch un errore di render finisce in una promise rifiutata:
   // console muta e pagina a meta', senza che nessuno se ne accorga.
   avvia().catch((e) => {
@@ -144,15 +148,27 @@ if (!configurato && inLocale) {
   mostraGate("Firebase non è ancora configurato: compila assets/firebase-config.js "
     + "con l'output di `firebase apps:sdkconfig WEB --project ecosite-34d60`.");
 } else {
-  const auth = getAuth(initializeApp(firebaseConfig));
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = getAuth(fbApp);
   const provider = new GoogleAuthProvider();
   await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-  // Nessuna lista di indirizzi: entra chiunque abbia un account Google.
-  // Il filtro c'era e l'ho tolto invece di lasciarlo con la lista vuota,
-  // perche' una copia vecchia del file in cache avrebbe continuato a
-  // rifiutare gente per dieci minuti dopo ogni pubblicazione.
-  onAuthStateChanged(auth, (u) => (u ? apriApp(u) : mostraGate()));
+  // Entra chiunque abbia un account Google: nessuna lista di indirizzi.
+  // L'unico motivo per cui si viene respinti e' un bando, che pero' non e'
+  // deciso qui - lo decidono le regole di Firestore, che girano sui server
+  // di Google. Questo controllo serve solo a mostrare un messaggio decente.
+  onAuthStateChanged(auth, async (u) => {
+    if (!u) return mostraGate();
+
+    const { registraAccesso, isAdmin } = await import("./registro.js");
+    const stato = await registraAccesso(fbApp, u);
+
+    if (stato.bandito) {
+      await signOut(auth);
+      return mostraGate("Questo account non ha piu' accesso al sito.");
+    }
+    apriApp(u, { admin: isAdmin(u), registro: !stato.errore });
+  });
 
   // I due inciampi del primo deploy. Entrambi si risolvono in console, ma i
   // codici grezzi non dicono cosa fare, quindi lo diciamo noi.

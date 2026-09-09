@@ -134,6 +134,42 @@ client: tiene fuori dall'interfaccia, non dai dati. I JSON sono serviti in
 chiaro da GitHub Pages e chiunque abbia l'indirizzo li può scaricare. Per una
 restrizione vera serve un backend.
 
+### Amministrazione
+
+`/mush/adm/` — riservata a `eug2002@gmail.com`. Elenca chi è entrato (primo
+accesso, ultimo accesso, numero di accessi) e permette di bandire, riammettere
+o eliminare.
+
+Il registro sta su **Cloud Firestore**, in `utenti/{uid}`. Il bando è applicato
+dalle regole in [`firestore.rules`](firestore.rules), che girano sui server di
+Google: non è un controllo del browser e non si aggira modificando la pagina.
+Le regole impediscono anche di togliersi il bando da soli, di cambiare la
+propria email, e di scrivere un contatore che non sia un intero — quel campo lo
+scrive l'utente e finisce in pagina nell'amministrazione.
+
+**Cosa un bando non fa:** i dati meteo stanno in file statici su GitHub Pages e
+restano pubblici. Un bandito non entra più nell'interfaccia e non legge il
+registro, ma i JSON li scarica lo stesso conoscendo l'indirizzo. Per impedirlo
+servirebbe un backend.
+
+Eliminare un utente **non** è bandirlo: al prossimo accesso ricrea il proprio
+documento e rientra.
+
+#### Attivazione
+
+Firestore va acceso una volta sola, dalla console:
+
+1. [Crea il database](https://console.firebase.google.com/project/ecosite-34d60/firestore)
+   → *Crea database* → modalità **produzione** → regione `eur3` o `europe-west8`
+2. Poi, da qui, pubblica le regole:
+
+```bash
+firebase deploy --only firestore:rules --project ecosite-34d60
+```
+
+Finché Firestore è spento il sito funziona lo stesso: il registro fallisce in
+silenzio e nessuno viene respinto.
+
 ### Cache
 
 Gli asset escono con `Cache-Control: max-age=600`. Per non lasciare dieci

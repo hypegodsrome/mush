@@ -400,6 +400,28 @@ select {
 .mk     { stroke: var(--bg); }
 .mk-sel { stroke: var(--ink); }
 
+/* ---------- amministrazione ---------- */
+.utenti { display: grid; gap: 0.5rem; }
+.utente {
+  display: grid; gap: 0.5rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) auto;
+  align-items: center;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 0.7rem 0.9rem;
+}
+.utente.is-bandito { opacity: 0.65; border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.ut-chi { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; min-width: 0; }
+.ut-chi b { font-size: 0.9rem; }
+.ut-chi span { font-size: 0.78rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.ut-dati { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.74rem; color: var(--ink-3); }
+.ut-azioni { display: flex; gap: 0.4rem; justify-self: end; }
+.pill-ko { background: color-mix(in srgb, var(--danger) 22%, var(--bg-2)); color: var(--danger); }
+
+@media (max-width: 700px) {
+  .utente { grid-template-columns: 1fr; }
+  .ut-azioni { justify-self: start; }
+}
+
 /* ---------- modello ---------- */
 .pesi, .specie-info, .sorgenti { display: grid; gap: 0.5rem; }
 .peso, .sp, .src {

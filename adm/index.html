@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mush — Amministrazione</title>
+<meta name="theme-color" content="#12100d">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🍄</text></svg>">
+<script>
+  try {
+    var t = localStorage.getItem("mush-tema");
+    if (t === "chiaro" || t === "scuro") document.documentElement.dataset.tema = t;
+  } catch (e) { /* storage bloccato: resta in automatico */ }
+</script>
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self' 'sha256-0tMeV8wWP50567kHmyqDAsyEs/BEtp2gng4RfMF0ce8=' https://www.gstatic.com https://apis.google.com;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  font-src 'self';
+  connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firestore.googleapis.com;
+  frame-src https://ecosite-34d60.firebaseapp.com https://apis.google.com https://accounts.google.com;
+  form-action 'none';
+  base-uri 'self';
+  object-src 'none';
+  upgrade-insecure-requests
+">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body>
+
+<div id="gate" class="gate" hidden>
+  <div class="gate-card">
+    <div class="gate-mark">🔒</div>
+    <h1>Amministrazione</h1>
+    <p class="gate-sub">Riservata all'amministratore del sito</p>
+    <button id="btn-login" class="btn-google">Accedi con Google</button>
+    <p id="gate-err" class="gate-err" hidden></p>
+    <p class="gate-note"><a href="../">Torna al sito</a></p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="brand"><span class="brand-mark">🍄</span> Mush · admin</div>
+    <div class="top-right">
+      <span id="user" class="user"></span>
+      <a class="btn-ghost" href="../">Sito</a>
+      <button id="btn-logout" class="btn-ghost" type="button">Esci</button>
+    </div>
+  </header>
+
+  <main>
+    <h2>Chi è entrato</h2>
+    <div id="riassunto" class="stazione"></div>
+
+    <div class="controls" style="margin-top:1rem">
+      <label>Ordina
+        <select id="sel-ordine">
+          <option value="ultimo">Ultimo accesso</option>
+          <option value="primo">Primo accesso</option>
+          <option value="accessi">Numero di accessi</option>
+          <option value="email">Indirizzo</option>
+        </select>
+      </label>
+      <label>Mostra
+        <select id="sel-filtro">
+          <option value="tutti">Tutti</option>
+          <option value="attivi">Solo attivi</option>
+          <option value="banditi">Solo banditi</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="utenti" class="utenti"></div>
+    <p id="msg" class="muted small"></p>
+
+    <details class="disclaimer">
+      <summary>Cosa fa davvero un bando</summary>
+      <ul>
+        <li>Il bando è applicato dalle <strong>regole di Firestore</strong>, che
+            girano sui server di Google. Non è un controllo del browser e non si
+            aggira modificando la pagina.</li>
+        <li>Un utente bandito viene disconnesso e non può più leggere né
+            scrivere il registro.</li>
+        <li><strong>I dati meteo restano comunque pubblici.</strong> Stanno in
+            file statici su GitHub Pages: chi conosce l'indirizzo li scarica
+            anche da bandito. Per impedirlo servirebbe un backend.</li>
+        <li>Eliminare un utente non è bandirlo: al prossimo accesso ricrea il
+            proprio documento e rientra. Serve solo a fare pulizia.</li>
+      </ul>
+    </details>
+  </main>
+</div>
+
+<script type="module" src="../assets/adm.js"></script>
+</body>
+</html>

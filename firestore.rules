@@ -1,0 +1,80 @@
+rules_version = '2';
+
+// Regole del registro accessi di Mush.
+//
+// Queste girano sui server di Google, non nel browser: sono l'unico posto dove
+// un bando viene davvero applicato. Il controllo lato client serve solo a
+// mostrare un messaggio decente, e da solo si aggira in due minuti.
+//
+// Limite da tenere presente: i dati meteo del sito stanno in file statici su
+// GitHub Pages e restano pubblici. Un bando toglie l'accesso all'interfaccia e
+// al registro, non ai JSON. Per togliere anche quelli servirebbe un backend.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // L'amministratore e' inchiodato qui dentro, non deciso dal client.
+    // email_verified esclude i casi in cui il provider non ha confermato
+    // l'indirizzo: senza, basterebbe un account con quella mail non verificata.
+    function admin() {
+      return request.auth != null
+             && request.auth.token.email == 'eug2002@gmail.com'
+             && request.auth.token.email_verified == true;
+    }
+
+    function mio(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /utenti/{uid} {
+
+      // Ognuno vede se stesso, l'amministratore vede tutti.
+      allow read: if admin() || mio(uid);
+      allow list: if admin();
+
+      // Primo accesso: si crea solo il proprio documento, con la propria
+      // email presa dal token e non dal client, e non ci si puo' creare
+      // gia' bandito o gia' amministratore.
+      // I tipi vanno verificati qui: `accessi` e `nome` li scrive l'utente e
+      // finiscono in pagina nell'amministrazione. Senza questi controlli si
+      // potrebbe scrivere una stringa al posto del contatore.
+      allow create: if mio(uid)
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.bandito == false
+                    && request.resource.data.accessi is int
+                    && request.resource.data.accessi == 1
+                    && request.resource.data.nome is string
+                    && request.resource.data.nome.size() <= 120
+                    && request.resource.data.keys().hasOnly(
+                         ['email', 'nome', 'primo_accesso', 'ultimo_accesso',
+                          'accessi', 'bandito']);
+
+      // Accessi successivi: si aggiornano solo data e contatore.
+      // Non si puo' cambiare email, ne' togliersi il bando da soli, ne'
+      // scrivere se si e' gia' banditi.
+      allow update: if admin()
+                    || (mio(uid)
+                        && resource.data.bandito != true
+                        && request.resource.data.bandito == resource.data.bandito
+                        && request.resource.data.email == resource.data.email
+                        && request.resource.data.primo_accesso == resource.data.primo_accesso
+                        && request.resource.data.accessi is int
+                        && request.resource.data.accessi == resource.data.accessi + 1
+                        && request.resource.data.nome is string
+                        && request.resource.data.nome.size() <= 120
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['ultimo_accesso', 'accessi', 'nome']));
+
+      // Cancellare un utente non e' un bando: tornerebbe dentro al prossimo
+      // accesso creando un documento nuovo. Solo l'amministratore, e solo
+      // per fare pulizia.
+      allow delete: if admin();
+    }
+
+    // Tutto il resto e' chiuso. Se un giorno servira' un'altra collezione,
+    // va aperta esplicitamente qui.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -780,30 +780,32 @@ def verifica_csp():
     import base64
     import hashlib
 
-    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
-    inline = re.findall(r"<script>(.*?)</script>", html, re.S)
-    if len(inline) != 1:
-        raise AssertionError(f"attesi 1 script inline, trovati {len(inline)}: "
-                             "aggiorna la CSP e questo controllo")
+    for pagina in ("index.html", os.path.join("adm", "index.html")):
+        html = open(os.path.join(ROOT, pagina), encoding="utf-8").read()
+        inline = re.findall(r"<script>(.*?)</script>", html, re.S)
+        if len(inline) != 1:
+            raise AssertionError(f"{pagina}: atteso 1 script inline, trovati "
+                                 f"{len(inline)}: aggiorna la CSP e questo controllo")
 
-    atteso = "sha256-" + base64.b64encode(
-        hashlib.sha256(inline[0].encode("utf-8")).digest()).decode()
+        atteso = "sha256-" + base64.b64encode(
+            hashlib.sha256(inline[0].encode("utf-8")).digest()).decode()
 
-    csp = re.search(r'http-equiv="Content-Security-Policy"\s+content="(.*?)"', html, re.S)
-    if not csp:
-        raise AssertionError("meta Content-Security-Policy assente da index.html")
-    if atteso not in csp.group(1):
-        raise AssertionError(
-            f"hash CSP non aggiornato.\n  atteso in index.html: '{atteso}'\n"
-            "  sostituiscilo nel meta Content-Security-Policy.")
+        csp = re.search(r'http-equiv="Content-Security-Policy"\s+content="(.*?)"',
+                        html, re.S)
+        if not csp:
+            raise AssertionError(f"{pagina}: meta Content-Security-Policy assente")
+        if atteso not in csp.group(1):
+            raise AssertionError(
+                f"{pagina}: hash CSP non aggiornato.\n  atteso: '{atteso}'\n"
+                "  sostituiscilo nel meta Content-Security-Policy.")
 
-    # Direttive che non devono sparire in una modifica distratta.
-    for d in ("default-src 'none'", "object-src 'none'", "base-uri 'self'",
-              "form-action 'none'"):
-        if d not in csp.group(1):
-            raise AssertionError(f"direttiva CSP mancante: {d}")
+        # Direttive che non devono sparire in una modifica distratta.
+        for d in ("default-src 'none'", "object-src 'none'", "base-uri 'self'",
+                  "form-action 'none'"):
+            if d not in csp.group(1):
+                raise AssertionError(f"{pagina}: direttiva CSP mancante: {d}")
 
-    print(f"  CSP: hash dello script inline verificato ({atteso[:24]}...)")
+        print(f"  CSP {pagina}: hash inline verificato ({atteso[:20]}...)")
 
 
 def selftest():

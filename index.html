@@ -30,7 +30,7 @@
   style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
   img-src 'self' data: https:;
   font-src 'self';
-  connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com;
+  connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firestore.googleapis.com;
   frame-src https://g0.ipcamlive.com https://ecosite-34d60.firebaseapp.com https://apis.google.com https://accounts.google.com;
   form-action 'none';
   base-uri 'self';
@@ -87,6 +87,7 @@
   <div class="brand"><span class="brand-mark">🍄</span> Mush</div>
   <div class="top-right">
     <span id="user" class="user"></span>
+    <a id="link-adm" class="btn-ghost" href="adm/" hidden>Admin</a>
     <button class="btn-ghost btn-icona" data-tema-btn type="button"></button>
     <button id="btn-logout" class="btn-ghost" type="button">Esci</button>
   </div>
