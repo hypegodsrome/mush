@@ -102,16 +102,31 @@ if (!configurato && inLocale) {
     apriApp(u);
   });
 
+  // I due inciampi del primo deploy. Entrambi si risolvono in console, ma i
+  // codici grezzi non dicono cosa fare, quindi lo diciamo noi.
+  const PROJ = firebaseConfig.projectId;
+  const AIUTO = {
+    "auth/configuration-not-found":
+      `Authentication non è ancora attivo sul progetto ${PROJ}. `
+      + `Aprilo in console → Authentication → Inizia, poi abilita Google.`,
+    "auth/unauthorized-domain":
+      `Il dominio «${location.hostname}» non è autorizzato. `
+      + `Console → Authentication → Settings → Domini autorizzati → Aggiungi dominio.`,
+    "auth/operation-not-allowed":
+      "Il provider Google non è abilitato. "
+      + "Console → Authentication → Sign-in method → Google → Abilita.",
+    "auth/popup-blocked":
+      "Il browser ha bloccato la finestra di accesso. Sbloccala e riprova.",
+    "auth/popup-closed-by-user":
+      "Finestra di accesso chiusa prima di completare l'accesso.",
+  };
+
   $("#btn-login").addEventListener("click", async () => {
     $("#gate-err").hidden = true;
     try {
       await signInWithPopup(auth, provider);
     } catch (e) {
-      // Il caso di gran lunga piu' probabile al primo deploy.
-      const aiuto = e.code === "auth/unauthorized-domain"
-        ? ` — aggiungi «${location.hostname}» in Firebase Console > Authentication > Settings > Domini autorizzati.`
-        : "";
-      mostraGate((e.code || e.message) + aiuto);
+      mostraGate(AIUTO[e.code] || e.message || String(e));
     }
   });
 
