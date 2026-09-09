@@ -7,6 +7,15 @@
 <meta name="description" content="Previsione di crescita dei funghi sui Monti Simbruini: modello a sei fattori, stazione meteo di Monte Livata, mappa nazionale e webcam in diretta.">
 <meta name="theme-color" content="#12100d">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🍄</text></svg>">
+<script>
+  // Prima del CSS, di proposito: se il tema lo decidesse app.js la pagina
+  // lampeggerebbe chiara prima di diventare scura. Nessun attributo = segui
+  // il sistema operativo.
+  try {
+    var t = localStorage.getItem("mush-tema");
+    if (t === "chiaro" || t === "scuro") document.documentElement.dataset.tema = t;
+  } catch (e) { /* storage bloccato: resta in automatico */ }
+</script>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
       integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
@@ -31,6 +40,7 @@
       Accedi con Google
     </button>
     <p id="gate-err" class="gate-err" hidden></p>
+    <button class="btn-ghost btn-icona gate-tema" data-tema-btn type="button"></button>
     <p class="gate-note">
       Accesso riservato. I dati meteo restano pubblici sul repository:
       il login serve a proteggere l'accesso al sito, non i file.
@@ -45,6 +55,7 @@
   <div class="brand"><span class="brand-mark">🍄</span> Mush</div>
   <div class="top-right">
     <span id="user" class="user"></span>
+    <button class="btn-ghost btn-icona" data-tema-btn type="button"></button>
     <button id="btn-logout" class="btn-ghost" type="button">Esci</button>
   </div>
 </header>

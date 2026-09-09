@@ -1,19 +1,70 @@
 /* Mush — bosco di faggio a settembre: terra, muschio, castagna. */
 
+/* Tre stati: nessun attributo = segui il sistema, data-tema="chiaro" e
+   data-tema="scuro" = scelta esplicita, che deve vincere in entrambe le
+   direzioni. Per questo il blocco scuro compare due volte. */
+
 :root {
+  color-scheme: light;
+  --bg:        #f6f2ea;   /* carta */
+  --bg-glow:   #fffaf0;
+  --bg-2:      #eae2d5;
+  --card:      #fffdf8;
+  --line:      #ded4c3;
+  --ink:       #241f18;
+  --ink-2:     #675e50;
+  --ink-3:     #7d7261;
+  --accent:    #a85c19;
+  --on-accent: #fffdf8;
+  --accent-2:  #5c7a33;
+  --danger:    #a83a26;
+  --chart-rain: #3d6f9e;
+  --chart-temp: #a85c19;
+
+  --r:         14px;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+
+/* Il bosco di faggio a settembre: terra, muschio, castagna. */
+:root[data-tema="scuro"],
+:root:not([data-tema="chiaro"]) {
+  color-scheme: dark;
   --bg:        #12100d;
+  --bg-glow:   #241f18;
   --bg-2:      #1b1813;
   --card:      #211d17;
   --line:      #332c23;
   --ink:       #efe7da;
   --ink-2:     #a89b88;
-  --ink-3:     #6e6455;
+  --ink-3:     #948871;
   --accent:    #d98a3d;
+  --on-accent: #1b1206;
   --accent-2:  #8fae5c;
-  --danger:    #c9553f;
-  --r:         14px;
-  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  --danger:    #e0705a;
+  --chart-rain: #5a8cbe;
+  --chart-temp: #d98a3d;
+}
+
+/* Senza scelta esplicita comanda il sistema: qui si torna al chiaro. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]) {
+    color-scheme: light;
+    --bg:        #f6f2ea;
+    --bg-glow:   #fffaf0;
+    --bg-2:      #eae2d5;
+    --card:      #fffdf8;
+    --line:      #ded4c3;
+    --ink:       #241f18;
+    --ink-2:     #675e50;
+    --ink-3:     #7d7261;
+    --accent:    #a85c19;
+    --on-accent: #fffdf8;
+    --accent-2:  #5c7a33;
+    --danger:    #a83a26;
+    --chart-rain: #3d6f9e;
+    --chart-temp: #a85c19;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -22,7 +73,7 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: radial-gradient(1200px 600px at 50% -10%, #241f18 0%, var(--bg) 60%);
+  background: radial-gradient(1200px 600px at 50% -10%, var(--bg-glow) 0%, var(--bg) 60%);
   background-attachment: fixed;
   color: var(--ink);
   font: 15px/1.55 var(--sans);
@@ -108,8 +159,10 @@ a { color: var(--accent); }
   cursor: pointer;
 }
 .btn:hover, .btn-ghost:hover { border-color: var(--ink-3); }
-.btn { background: var(--accent); color: #1b1206; border-color: transparent; font-weight: 600; }
-.btn:hover { background: #e79a4e; }
+.btn { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 85%, var(--ink)); }
+.btn-icona { padding: 0.4rem 0.55rem; font-size: 0.95rem; line-height: 1; }
+.gate-tema { margin-top: 1.25rem; }
 
 .tabs {
   display: flex; gap: 0.4rem;
@@ -129,7 +182,7 @@ a { color: var(--accent); }
   font: 500 0.85rem var(--sans);
   cursor: pointer;
 }
-.tab.is-on { background: var(--accent); border-color: transparent; color: #1b1206; font-weight: 600; }
+.tab.is-on { background: var(--accent); border-color: transparent; color: var(--on-accent); font-weight: 600; }
 
 main { max-width: 900px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 
@@ -281,7 +334,7 @@ select {
 /* ---------- lightbox ---------- */
 .lb {
   width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh;
-  margin: 0; padding: 0; border: 0; background: #080706; color: var(--ink);
+  margin: 0; padding: 0; border: 0; background: var(--bg); color: var(--ink);
   display: grid; grid-template-rows: auto 1fr;
 }
 .lb:not([open]) { display: none; }
@@ -320,6 +373,19 @@ select {
   overflow-x: auto;
 }
 .chart svg { display: block; min-width: 620px; width: 100%; height: 230px; }
+/* Colori del grafico dal CSS e non scritti nell'SVG: cosi' seguono il tema
+   senza dover ridisegnare il grafico a ogni cambio. */
+.ch-rain      { fill: var(--chart-rain); opacity: 0.85; }
+.ch-temp      { stroke: var(--chart-temp); }
+.ch-asse      { stroke: var(--line); }
+.ch-oggi      { stroke: var(--ink-2); }
+.ch-lab       { fill: var(--ink-3); }
+.ch-lab-rain  { fill: var(--chart-rain); }
+.ch-lab-temp  { fill: var(--chart-temp); }
+
+/* Marcatori della mappa: vedi il commento in disegnaMappa(). */
+.mk     { stroke: var(--bg); }
+.mk-sel { stroke: var(--ink); }
 
 /* ---------- modello ---------- */
 .pesi, .specie-info, .sorgenti { display: grid; gap: 0.5rem; }

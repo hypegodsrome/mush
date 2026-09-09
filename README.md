@@ -12,6 +12,10 @@ da GitHub Actions ogni 6 ore.
 - **Meteo** — stazione al suolo e statistiche per ogni zona
 - **Modello** — come funziona, con che pesi, e cosa non sa fare
 
+Tema chiaro o scuro dal pulsante in alto a destra: cicla automatico → chiaro →
+scuro. In automatico segue il sistema operativo. Entrambe le palette superano
+WCAG AA (4,5:1) su tutti i colori di testo.
+
 ## Il modello
 
 Il fungo non nasce il giorno in cui piove: la pioggia innesca il micelio, poi

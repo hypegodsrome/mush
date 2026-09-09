@@ -55,6 +55,61 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
   (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // ==========================================================================
+// Tema
+//
+// Tre stati: "auto" segue il sistema, "chiaro" e "scuro" sono scelte
+// esplicite. Il pulsante li cicla, cosi' dopo aver scelto si puo' tornare
+// all'automatico - con un semplice interruttore a due posizioni non si
+// potrebbe piu'. Il valore iniziale lo mette lo script inline nell'head,
+// prima del CSS, per non far lampeggiare la pagina.
+// ==========================================================================
+const TEMI = [
+  { id: "auto",   icona: "◐", testo: "Tema: automatico (segue il sistema)" },
+  { id: "chiaro", icona: "☀", testo: "Tema: chiaro" },
+  { id: "scuro",  icona: "☾", testo: "Tema: scuro" },
+];
+
+function temaCorrente() {
+  return document.documentElement.dataset.tema || "auto";
+}
+
+function applicaTema(id) {
+  const root = document.documentElement;
+  if (id === "auto") delete root.dataset.tema;
+  else root.dataset.tema = id;
+
+  try {
+    if (id === "auto") localStorage.removeItem("mush-tema");
+    else localStorage.setItem("mush-tema", id);
+  } catch (e) { /* storage bloccato: vale per questa sessione */ }
+
+  // Due pulsanti: uno nell'intestazione e uno nella schermata di accesso, che
+  // e' quello che si vede per primo. Restano in sincrono perche' leggono
+  // entrambi lo stesso stato.
+  const t = TEMI.find((x) => x.id === id) || TEMI[0];
+  $$("[data-tema-btn]").forEach((b) => {
+    b.textContent = t.icona;
+    b.title = t.testo;
+    b.setAttribute("aria-label", t.testo);
+  });
+
+  // La barra del browser su mobile deve seguire il fondo pagina.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.content = getComputedStyle(root).getPropertyValue("--bg").trim() || "#12100d";
+  }
+}
+
+function avviaTema() {
+  applicaTema(temaCorrente());
+  $$("[data-tema-btn]").forEach((b) => b.addEventListener("click", () => {
+    const i = TEMI.findIndex((x) => x.id === temaCorrente());
+    applicaTema(TEMI[(i + 1) % TEMI.length].id);
+  }));
+}
+avviaTema();
+
+// ==========================================================================
 // Autenticazione
 // ==========================================================================
 const configurato = !Object.values(firebaseConfig).some((v) => v === "DA_COMPILARE");
@@ -323,9 +378,12 @@ function disegnaMappa() {
 
   const g = L.layerGroup(stato.dati.spots.map((s) => {
     const o = s.specie[stato.specie].oggi, q = o?.q ?? 0;
+    // Il bordo lo decide il CSS: Leaflet scriverebbe `stroke` come attributo
+    // di presentazione, dove le variabili CSS non si risolvono. Una regola su
+    // classe ha priorita' piu' alta dell'attributo, quindi vince e segue il tema.
     const mk = L.circleMarker([s.lat, s.lon], {
       radius: 9 + q, weight: s.id === stato.spot.id ? 3 : 1,
-      color: s.id === stato.spot.id ? "#efe7da" : "#12100d",
+      className: s.id === stato.spot.id ? "mk mk-sel" : "mk",
       fillOpacity: 0.85, fillColor: coloreQ(q),
     }).bindPopup(`<b>${esc(s.nome)}</b><br>${Math.round(s.quota_dem)} m · ${esc(s.bosco)}<br>
       <span class="pop-q" style="color:${coloreQ(q)}">${q.toFixed(1).replace(".", ",")}</span> su 10
@@ -552,28 +610,28 @@ function renderChart(s) {
 
   const barre = pi.map((v, i) => v == null || v <= 0 ? "" :
     `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${yP(v).toFixed(1)}" width="${bw.toFixed(1)}"
-       height="${(P.t + ih - yP(v)).toFixed(1)}" rx="1.5" fill="#4b7fb3" opacity=".85"/>`).join("");
+       height="${(P.t + ih - yP(v)).toFixed(1)}" rx="1.5" class="ch-rain"/>`).join("");
 
   const linea = te.map((v, i) => v == null ? null : `${x(i).toFixed(1)},${yT(v).toFixed(1)}`)
     .filter(Boolean).join(" ");
 
   const oggiX = x(oggiIdx - da);
   const etichette = gi.map((g, i) => (i % 5 === 0 || i === gi.length - 1)
-    ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" fill="#6e6455" font-size="9"
+    ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="ch-lab" font-size="9"
          text-anchor="middle">${gg(g)}</text>` : "").join("");
 
   $("#chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img"
       aria-label="Pioggia giornaliera e temperatura media">
-    <line x1="${P.l}" y1="${P.t + ih}" x2="${W - P.r}" y2="${P.t + ih}" stroke="#332c23"/>
+    <line x1="${P.l}" y1="${P.t + ih}" x2="${W - P.r}" y2="${P.t + ih}" class="ch-asse"/>
     ${barre}
-    <polyline points="${linea}" fill="none" stroke="#d98a3d" stroke-width="1.8"
+    <polyline points="${linea}" fill="none" class="ch-temp" stroke-width="1.8"
       stroke-linejoin="round" stroke-linecap="round"/>
     <line x1="${oggiX.toFixed(1)}" y1="${P.t}" x2="${oggiX.toFixed(1)}" y2="${P.t + ih}"
-      stroke="#a89b88" stroke-dasharray="3 3" stroke-width="1"/>
-    <text x="${P.l - 6}" y="${P.t + 8}" fill="#4b7fb3" font-size="9" text-anchor="end">${maxP.toFixed(0)}</text>
-    <text x="${P.l - 6}" y="${P.t + ih}" fill="#4b7fb3" font-size="9" text-anchor="end">0</text>
-    <text x="${W - P.r + 6}" y="${yT(tMax - 2).toFixed(1)}" fill="#d98a3d" font-size="9">${(tMax - 2).toFixed(0)}°</text>
-    <text x="${W - P.r + 6}" y="${yT(tMin + 2).toFixed(1)}" fill="#d98a3d" font-size="9">${(tMin + 2).toFixed(0)}°</text>
+      class="ch-oggi" stroke-dasharray="3 3" stroke-width="1"/>
+    <text x="${P.l - 6}" y="${P.t + 8}" class="ch-lab-rain" font-size="9" text-anchor="end">${maxP.toFixed(0)}</text>
+    <text x="${P.l - 6}" y="${P.t + ih}" class="ch-lab-rain" font-size="9" text-anchor="end">0</text>
+    <text x="${W - P.r + 6}" y="${yT(tMax - 2).toFixed(1)}" class="ch-lab-temp" font-size="9">${(tMax - 2).toFixed(0)}°</text>
+    <text x="${W - P.r + 6}" y="${yT(tMin + 2).toFixed(1)}" class="ch-lab-temp" font-size="9">${(tMin + 2).toFixed(0)}°</text>
     ${etichette}
   </svg>`;
 }
