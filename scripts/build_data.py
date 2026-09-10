@@ -130,6 +130,14 @@ DAILY = [
     "et0_fao_evapotranspiration",
     "soil_moisture_0_to_7cm_mean",
     "soil_temperature_0_to_7cm_mean",
+    # Solo per la scheda meteo, non per il modello: codice del tempo,
+    # probabilita' di pioggia, raffiche, direzione, alba e tramonto.
+    "weather_code",
+    "precipitation_probability_max",
+    "wind_gusts_10m_max",
+    "wind_direction_10m_dominant",
+    "sunrise",
+    "sunset",
 ]
 
 PAST_DAYS = 92      # massimo consentito dall'endpoint forecast
@@ -661,6 +669,12 @@ def build_spots(oggi, stazione=None):
                 "vento": d["wind_speed_10m_max"],
                 "suolo_umidita": d.get("soil_moisture_0_to_7cm_mean"),
                 "suolo_temp": d.get("soil_temperature_0_to_7cm_mean"),
+                "codice": d.get("weather_code"),
+                "prob_pioggia": d.get("precipitation_probability_max"),
+                "raffica": d.get("wind_gusts_10m_max"),
+                "vento_dir": d.get("wind_direction_10m_dominant"),
+                "alba": d.get("sunrise"),
+                "tramonto": d.get("sunset"),
             },
         })
     return out

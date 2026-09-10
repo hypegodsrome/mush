@@ -872,12 +872,88 @@ function spotMeteo() {
 function renderMeteo() {
   const s = spotMeteo();
   $("#meteo-zona").textContent = `${s.nome} · ${Math.round(s.quota_dem)} m`;
+  $("#meteo-zona2").textContent = s.nome;
   // La stazione parla solo per le zone che le stanno intorno.
   $("#staz-wrap").hidden = !(stato.dati.stazione && s.rh_stazione != null);
   renderStazione();
+  renderPrevisioniMeteo(s);
+  renderConfrontoZone();
   renderStatModello(s);
   renderFonti(s);
   renderChart(s);
+}
+
+
+/* ---------- previsione meteo ----------
+   Nessun connettore meteo di mezzo: e' lo stesso dato Open-Meteo gia'
+   scaricato in CI per il modello, con in piu' codice del tempo, probabilita'
+   di pioggia e raffiche. La tabella dei codici sta in meteo.js e si carica
+   solo quando si apre la scheda. */
+let MET = null;
+
+async function caricaMeteoLib() {
+  if (!MET) MET = await import("./meteo.js");
+  return MET;
+}
+
+function renderPrevisioniMeteo(s) {
+  if (!MET) return;
+  const m = s.meteo, i0 = OGGI_I(s);
+  if (i0 < 0 || !m.codice) { $("#previsioni").innerHTML = ""; return; }
+
+  const fine = Math.min(m.giorni.length, i0 + 16);
+  const righe = [];
+  for (let i = i0; i < fine; i++) {
+    const [ic, testo] = MET.tempo(m.codice[i]);
+    const p = m.prob_pioggia?.[i];
+    righe.push(`<div class="pv-g${i === i0 ? " is-oggi" : ""}">
+      <div class="pv-d"><b>${i === i0 ? "Oggi" : esc(dow(m.giorni[i]))}</b>
+        <span>${esc(gg(m.giorni[i]))}</span></div>
+      <div class="pv-ic" title="${esc(testo)}">${ic}</div>
+      <div class="pv-t"><b>${Math.round(m.tmax[i])}&deg;</b>
+        <span>${Math.round(m.tmin[i])}&deg;</span></div>
+      <div class="pv-p">
+        ${p == null ? "" : `<span class="pv-prob${p >= 50 ? " is-alta" : ""}">${p}%</span>`}
+        ${m.pioggia[i] > 0
+          ? `<span class="pv-mm">${m.pioggia[i].toFixed(1).replace(".", ",")} mm</span>` : ""}
+      </div>
+      <div class="pv-v">${Math.round(m.vento[i])}<small> km/h ${esc(MET.bussola(m.vento_dir?.[i]))}</small>
+        ${m.raffica?.[i] ? `<small class="pv-raf">raffiche ${Math.round(m.raffica[i])}</small>` : ""}
+      </div>
+    </div>`);
+  }
+
+  $("#previsioni").innerHTML = righe.join("")
+    + `<p class="muted small" style="margin:.7rem 0 0">
+        Alba ${esc(MET.ora(m.alba?.[i0]))} &middot; tramonto ${esc(MET.ora(m.tramonto?.[i0]))}.
+        Open-Meteo sulle coordinate della zona, ${Math.round(s.quota_dem)} m.
+      </p>`;
+}
+
+/* Tutte le zone a confronto per oggi: la domanda vera non e' "che tempo fa",
+   e' "dove conviene andare". */
+function renderConfrontoZone() {
+  if (!MET) return;
+  const sel = spotMeteo();
+  $("#confronto").innerHTML = stato.dati.spots.map((s) => {
+    const i = OGGI_I(s), m = s.meteo;
+    if (i < 0) return "";
+    const [ic, testo] = MET.tempo(m.codice?.[i]);
+    const q = s.specie[stato.specie].oggi?.q ?? 0;
+    return `<button class="cz-r${s.id === sel.id ? " is-on" : ""}"
+              data-id="${esc(s.id)}" type="button">
+      <span class="cz-n">${esc(s.nome)}<small>${Math.round(s.quota_dem)} m</small></span>
+      <span class="cz-i" title="${esc(testo)}">${ic}</span>
+      <span class="cz-t">${Math.round(m.tmax[i])}&deg;<small>${Math.round(m.tmin[i])}&deg;</small></span>
+      <span class="cz-p">${m.prob_pioggia?.[i] ?? "&ndash;"}%</span>
+      <span class="cz-q" style="color:${coloreQ(q)}">${q.toFixed(1).replace(".", ",")}</span>
+    </button>`;
+  }).join("");
+
+  $$("#confronto .cz-r").forEach((b) => b.addEventListener("click", () => {
+    $("#sel-meteo").value = b.dataset.id;
+    renderMeteo();
+  }));
 }
 
 const ETICHETTE_FONTI = {
@@ -1173,5 +1249,5 @@ function mostraVista(b) {
   if (v === "specie") montaSpecie();
   if (v === "mappa") avviaMappa();
   if (v === "webcam") montaCams();
-  if (v === "meteo") renderMeteo();
+  if (v === "meteo") caricaMeteoLib().then(renderMeteo);
 }

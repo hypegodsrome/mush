@@ -1073,3 +1073,68 @@ select {
   .sd-foto img { aspect-ratio: 4/3; }
   .sd-testo { padding: 0.9rem 1rem 3rem; }
 }
+
+/* ---------- previsione giorno per giorno ---------- */
+.previsioni { display: grid; gap: 3px; }
+.pv-g {
+  display: grid;
+  grid-template-columns: 4.2rem 2.2rem 4.4rem 1fr 6.5rem;
+  align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.pv-g.is-oggi { border-color: var(--accent); }
+.pv-d b { font-size: 0.84rem; text-transform: capitalize; }
+.pv-d span { color: var(--ink-3); font-size: 0.74rem; margin-left: 0.25rem; }
+.pv-ic { font-size: 1.2rem; text-align: center; }
+.pv-t b { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.pv-t span { color: var(--ink-3); font-size: 0.82rem; margin-left: 0.3rem; }
+.pv-p { display: flex; gap: 0.4rem; align-items: baseline; flex-wrap: wrap; }
+.pv-prob {
+  font-size: 0.76rem; font-weight: 600; color: var(--chart-rain);
+  font-variant-numeric: tabular-nums;
+}
+.pv-prob.is-alta {
+  background: color-mix(in srgb, var(--chart-rain) 18%, transparent);
+  padding: 0.1rem 0.4rem; border-radius: 999px;
+}
+.pv-mm { font-size: 0.74rem; color: var(--ink-2); }
+.pv-v {
+  text-align: right; font-size: 0.82rem; font-variant-numeric: tabular-nums;
+}
+.pv-v small { color: var(--ink-3); font-size: 0.68rem; }
+.pv-raf { display: block; }
+
+/* ---------- confronto fra zone ---------- */
+.confronto { display: grid; gap: 3px; }
+.cz-r {
+  display: grid;
+  grid-template-columns: 1fr 2rem 4rem 3rem 3rem;
+  align-items: center; gap: 0.5rem;
+  width: 100%; text-align: left; font: inherit; color: inherit;
+  padding: 0.55rem 0.8rem; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.cz-r:hover { border-color: var(--ink-3); }
+.cz-r.is-on { border-color: var(--accent); }
+.cz-n { font-size: 0.86rem; min-width: 0; }
+.cz-n small { display: block; color: var(--ink-3); font-size: 0.7rem; }
+.cz-i { font-size: 1.1rem; text-align: center; }
+.cz-t { font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+.cz-t small { color: var(--ink-3); margin-left: 0.25rem; }
+.cz-p { font-size: 0.78rem; color: var(--chart-rain); text-align: right;
+        font-variant-numeric: tabular-nums; }
+.cz-q { font: 700 0.95rem var(--mono); text-align: right; }
+
+@media (max-width: 700px) {
+  .pv-g { grid-template-columns: 3.4rem 1.8rem 3.6rem 1fr; gap: 0.4rem;
+          padding: 0.5rem 0.6rem; }
+  .pv-v { grid-column: 1 / -1; text-align: left; color: var(--ink-3);
+          font-size: 0.72rem; }
+  .pv-raf { display: inline; margin-left: 0.4rem; }
+  .cz-r { grid-template-columns: 1fr 1.8rem 3.4rem 2.6rem 2.6rem; gap: 0.35rem;
+          padding: 0.5rem 0.6rem; }
+  .cz-n { font-size: 0.8rem; }
+}
