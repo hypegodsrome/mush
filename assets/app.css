@@ -829,16 +829,48 @@ select {
 }
 .sp-card {
   background: var(--card); border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
-  border-radius: var(--r); padding: 1rem 1.1rem;
+  border-radius: var(--r); overflow: hidden;
   box-shadow: var(--sh-1);
+  display: flex; flex-direction: column;
 }
-/* Il bordo porta il rischio piu' alto fra i sosia: e' la cosa da vedere per
-   prima, prima ancora del nome. */
-.sp-card.r-mortale { border-left-color: #b3182b; }
-.sp-card.r-grave   { border-left-color: #d97706; }
-.sp-card.r-lieve   { border-left-color: #b7a53a; }
-.sp-card.r-nessuna { border-left-color: var(--accent-2); }
+.sp-corpo { padding: 0.9rem 1.1rem 1.1rem; }
+.sp-foto { margin: 0; position: relative; }
+.sp-foto img {
+  display: block; width: 100%; aspect-ratio: 4/3;
+  object-fit: cover; background: var(--bg-2);
+}
+/* I crediti sono un obbligo di CC BY e CC BY-SA: piccoli ma sempre visibili,
+   non nascosti dietro un passaggio del mouse. */
+.sp-foto figcaption {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 0.3rem 0.55rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / .72));
+  color: #e8e2d8; font-size: 0.62rem; line-height: 1.3;
+}
+.sp-foto figcaption a { color: #e8e2d8; }
+/* La targhetta sulla scheda dice la commestibilita' della SPECIE. Il rischio
+   dei sosia sta sul pulsante delle confusioni, dove non si puo' scambiare per
+   una proprieta' del fungo che si sta guardando. */
+.sp-com {
+  font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.55rem;
+  border-radius: 999px; margin-left: auto; color: #fff; white-space: nowrap;
+}
+.sp-com-ottimo     { background: #3f7a2e; }
+.sp-com-buono      { background: #5c7a33; }
+.sp-com-condizioni { background: #b7791f; color: #17110a; }
+.sp-com-tossico    { background: #c2410c; }
+.sp-com-mortale    { background: #b3182b; }
+
+.sp-piu.r-mortale { border-left: 4px solid #b3182b; }
+.sp-piu.r-grave   { border-left: 4px solid #d97706; }
+.sp-piu.r-lieve   { border-left: 4px solid #b7a53a; }
+.sp-piu.r-nessuna { border-left: 4px solid var(--accent-2); }
+
+.sp-c { display: flex; gap: 0.6rem; align-items: flex-start; }
+.sp-c-foto {
+  width: 74px; height: 74px; flex: 0 0 auto;
+  border-radius: 8px; object-fit: cover; background: var(--bg-2);
+}
 
 .sp-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
 .sp-r {
@@ -881,3 +913,71 @@ select {
 .sp-c b { font-size: 0.86rem; }
 .sp-c .sp-r { margin-left: 0.4rem; }
 .sp-c p { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--ink-2); }
+
+
+/* ==========================================================================
+   Mobile
+   Sullo schermo del telefono il pannello degli strati copriva quasi tutta la
+   mappa, la legenda ci finiva sotto, e sotto la mappa restava una fascia nera
+   vuota. Qui il pannello diventa un foglio che sale dal basso, chiuso di
+   default, e la mappa si prende davvero tutto lo spazio.
+   ========================================================================== */
+@media (max-width: 700px) {
+
+  .mappa-scena {
+    height: calc(100dvh - 4.6rem);
+    margin-bottom: 0;
+  }
+  #map-src { display: none; }   /* lo dice gia' il pannello */
+
+  /* Pannello come foglio inferiore, chiuso all'apertura. */
+  .pannello {
+    top: auto; bottom: 0; left: 0; right: 0;
+    width: auto; max-height: 62dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-left: 0; border-right: 0; border-bottom: 0;
+    padding: 0.75rem 0.75rem 1rem;
+    transform: translateY(0);
+  }
+  .pannello::before {
+    content: ""; display: block; width: 40px; height: 4px;
+    margin: 0 auto 0.6rem; border-radius: 2px; background: var(--ink-3);
+    opacity: 0.5;
+  }
+  .pannello.is-chiuso { transform: translateY(101%); opacity: 1; }
+
+  /* Il pulsante degli strati resta sempre raggiungibile, in alto a destra. */
+  .pannello-tog {
+    opacity: 1; pointer-events: auto;
+    width: 44px; height: 44px; font-size: 1.25rem;
+  }
+
+  /* Legenda in alto a sinistra: in basso finirebbe sotto al foglio. */
+  .mappa-legenda {
+    top: 0.6rem; bottom: auto; left: 0.6rem; right: auto;
+    width: auto; max-width: calc(100vw - 5.5rem);
+    padding: 0.45rem 0.6rem;
+  }
+  .legenda-corpo { max-height: 34dvh; overflow-y: auto; }
+
+  .leaflet-bottom.leaflet-right { bottom: 0.4rem; }
+  .leaflet-control-attribution { font-size: 0.6rem; }
+
+  /* Schede specie a colonna singola, con foto piu' bassa. */
+  .sp-griglia { grid-template-columns: 1fr; }
+  .sp-foto img { aspect-ratio: 16/9; }
+  .sp-barra { gap: 0.5rem; }
+  .sp-cerca { min-width: 100%; order: -1; }
+
+  /* Aree toccabili: sotto i 44px il dito sbaglia. */
+  .sw { width: 46px; height: 26px; }
+  .sw::after { width: 20px; height: 20px; }
+  .sw:checked::after { transform: translateX(20px); }
+  .voce-ic { width: 38px; height: 38px; }
+  .btn, .btn-ghost, .sp-f { min-height: 40px; }
+
+  main { padding: 1.1rem 0.9rem 2rem; }
+  h2 { font-size: 1.22rem; }
+  .hero { padding: 1.15rem; gap: 1.1rem; }
+  .strip { grid-auto-columns: minmax(42px, 1fr); }
+}

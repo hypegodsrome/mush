@@ -1,9 +1,12 @@
 /* Guida alle specie dei Monti Simbruini e della valle dell'Aniene.
  *
- * Contenuto scritto per questo sito. Niente foto: non ho immagini di cui
- * detenga i diritti, e una foto sbagliata su una guida ai funghi e' peggio
- * di nessuna foto. Al loro posto c'e' il campo `segni`, che descrive a
- * parole i caratteri che si controllano in mano.
+ * Contenuto scritto per questo sito. Le foto vengono da Wikimedia Commons
+ * con licenze libere, scaricate da scripts/immagini.py partendo dall'immagine
+ * di apertura dell'articolo di Wikipedia: su una guida ai funghi la foto deve
+ * essere della specie giusta, e una ricerca per parola chiave restituisce
+ * anche cesti misti e sosia fotografati per confronto.
+ * Autore e licenza di ogni foto stanno in assets/specie/crediti.json e vanno
+ * mostrati in pagina, perche' CC BY e CC BY-SA lo impongono.
  *
  * `confusioni` e' la parte che conta davvero. Le guide che elencano solo le
  * specie buone sono quelle che mandano la gente in ospedale: quasi ogni
@@ -11,6 +14,18 @@
  *
  * `habitat` alimenta i filtri; `cerca` e' il testo su cui lavora la ricerca.
  */
+
+/* La commestibilita' della SPECIE, che e' cosa diversa dal rischio dei suoi
+ * sosia. Tenerle separate non e' pignoleria: una scheda "Porcini" con su
+ * scritto "Grave" si legge come "il porcino e' pericoloso", ed e' esattamente
+ * il fraintendimento che una guida non si puo' permettere. */
+export const COMMESTIBILITA = {
+  ottimo:      ["Ottimo commestibile", "#3f7a2e"],
+  buono:       ["Buon commestibile", "#5c7a33"],
+  condizioni:  ["Commestibile solo cotto a lungo", "#b7791f"],
+  tossico:     ["Tossico", "#c2410c"],
+  mortale:     ["Mortale", "#b3182b"],
+};
 
 export const HABITAT = {
   bosco:   "Bosco",
@@ -21,6 +36,8 @@ export const HABITAT = {
 export const SPECIE = [
   {
     id: "porcino",
+    commestibilita: "ottimo",
+    consumo: "Si consuma cotto. La tradizione italiana lo ammette anche crudo in fettine sottili, ma da crudo puo' dare disturbi ai soggetti sensibili: cotto e' sempre la scelta prudente.",
     nome: "Porcini",
     sci: "Boletus edulis, aereus, pinophilus, reticulatus",
     habitat: "bosco",
@@ -46,6 +63,8 @@ export const SPECIE = [
   },
   {
     id: "galletto",
+    commestibilita: "ottimo",
+    consumo: "Va cotto. Da crudo o poco cotto risulta indigesto.",
     nome: "Galletti o finferli",
     sci: "Cantharellus cibarius",
     habitat: "bosco",
@@ -70,6 +89,8 @@ export const SPECIE = [
   },
   {
     id: "steccherino",
+    commestibilita: "buono",
+    consumo: "Ottimo da giovane. Con l'eta' diventa amarognolo: si scarta la carne piu' scura.",
     nome: "Steccherino dorato",
     sci: "Hydnum repandum",
     habitat: "bosco",
@@ -89,6 +110,8 @@ export const SPECIE = [
   },
   {
     id: "trombetta",
+    commestibilita: "ottimo",
+    consumo: "Regge benissimo l'essiccazione, che ne concentra il profumo.",
     nome: "Trombette dei morti",
     sci: "Craterellus cornucopioides",
     habitat: "bosco",
@@ -109,6 +132,8 @@ export const SPECIE = [
   },
   {
     id: "ovolo",
+    commestibilita: "ottimo",
+    consumo: "Tradizionalmente consumato anche crudo in insalata, ma solo da esemplari gia' aperti e certi. Sugli esemplari chiusi il rischio di scambio con un'amanita mortale non vale la pena.",
     nome: "Ovolo buono",
     sci: "Amanita caesarea",
     habitat: "bosco",
@@ -136,6 +161,8 @@ export const SPECIE = [
   },
   {
     id: "mazza",
+    commestibilita: "buono",
+    consumo: "TOSSICA DA CRUDA: va sempre cotta bene. Si usa il solo cappello, il gambo e' fibroso e resta immangiabile anche dopo cottura.",
     nome: "Mazza di tamburo",
     sci: "Macrolepiota procera",
     habitat: "prato",
@@ -158,6 +185,8 @@ export const SPECIE = [
   },
   {
     id: "chiodino",
+    commestibilita: "condizioni",
+    consumo: "Tossico da crudo o poco cotto. Va prebollito almeno dieci minuti e l'acqua va buttata, poi cucinato. Anche cosi' risulta indigesto ad alcuni.",
     nome: "Chiodini",
     sci: "Armillaria mellea e specie affini",
     habitat: "ceppaie",
@@ -182,6 +211,8 @@ export const SPECIE = [
   },
   {
     id: "prugnolo",
+    commestibilita: "ottimo",
+    consumo: "Molto profumato, ottimo. Va cotto.",
     nome: "Prugnolo",
     sci: "Calocybe gambosa",
     habitat: "prato",
@@ -201,6 +232,8 @@ export const SPECIE = [
   },
   {
     id: "russula",
+    commestibilita: "ottimo",
+    consumo: "Una delle poche russule consumate anche crude. Carne dolce, mai piccante: se pizzica sulla lingua non e' questa.",
     nome: "Colombina verde",
     sci: "Russula virescens",
     habitat: "bosco",
@@ -217,7 +250,104 @@ export const SPECIE = [
     ],
   },
   {
+    id: "prataiolo",
+    commestibilita: "ottimo",
+    consumo: "Ottimo, anche crudo in insalata quando l'esemplare e' giovane e "
+           + "l'identificazione e' certa. Va scartato se al taglio ingiallisce "
+           + "e odora di inchiostro.",
+    nome: "Prataiolo",
+    sci: "Agaricus campestris",
+    habitat: "prato",
+    stagione: "Da settembre a novembre, dopo le piogge",
+    dove: "Prati e pascoli concimati, radure. Sui pianori dei Simbruini, "
+        + "spesso in cerchi.",
+    segni: "Cappello bianco sericeo, lamelle LIBERE dal gambo, ROSA da giovane "
+         + "e poi bruno-cioccolato con la maturazione. Anello semplice. Carne "
+         + "bianca che rosa appena al taglio. Odore gradevole di fungo. "
+         + "NESSUNA VOLVA alla base: va scavato tutto il piede per verificarlo.",
+    confusioni: [
+      ["Amanita phalloides e Amanita verna", "mortale",
+       "Le forme bianche delle amanite mortali crescono anche ai margini dei "
+       + "prati. Differenza decisiva: hanno la VOLVA a sacco alla base e le "
+       + "lamelle restano SEMPRE BIANCHE, mentre nel prataiolo virano al rosa "
+       + "e poi al bruno. Il piede va estratto per intero, mai tagliato."],
+      ["Agaricus xanthodermus", "grave",
+       "Il prataiolo giallo: identico a vista, ma la carne INGIALLISCE vivamente "
+       + "alla base del gambo e l'odore e' di inchiostro o fenolo. Provoca "
+       + "disturbi gastrointestinali importanti."],
+    ],
+  },
+  {
+    id: "pinarolo",
+    commestibilita: "buono",
+    consumo: "Va tolta la cuticola vischiosa del cappello prima di cucinarlo: "
+           + "e' quella a risultare lassativa. Anche cosi' e' poco digeribile "
+           + "in quantita'.",
+    nome: "Pinarolo",
+    sci: "Suillus luteus",
+    habitat: "bosco",
+    stagione: "Da settembre a novembre",
+    dove: "Esclusivamente sotto i pini, quindi nei rimboschimenti di conifere: "
+        + "sui Simbruini soprattutto verso Campaegli.",
+    segni: "Cappello bruno e VISCHIOSO anche da asciutto, pori gialli fitti, "
+         + "anello membranoso ben visibile sul gambo, con punteggiature scure "
+         + "sopra l'anello. Solo sotto pino.",
+    confusioni: [
+      ["Nessuna pericolosa", "nessuna",
+       "I Suillus sono tutti commestibili o al peggio poco digeribili. Il "
+       + "rischio qui non e' l'avvelenamento ma la cuticola non tolta."],
+    ],
+  },
+  {
+    id: "vescia",
+    commestibilita: "buono",
+    consumo: "Si mangia SOLO da giovane, quando la carne interna e' bianca, "
+           + "compatta e uniforme come un formaggio fresco. Appena vira al "
+           + "giallo o al verde-oliva va buttata.",
+    nome: "Vescia",
+    sci: "Lycoperdon perlatum e Calvatia utriformis",
+    habitat: "prato",
+    stagione: "Da agosto a novembre",
+    dove: "Prati, pascoli e radure del bosco.",
+    segni: "Corpo a pera o a globo, bianco, coperto di piccole verruche "
+         + "caduche. Non ha cappello, ne' lamelle, ne' gambo distinto. Da "
+         + "vecchia si sgonfia e libera una polvere bruna di spore.",
+    confusioni: [
+      ["Uova di Amanita", "mortale",
+       "Un'amanita mortale allo stadio di uovo, vista da fuori, e' una pallina "
+       + "bianca come una vescia. La verifica e' obbligatoria e semplice: si "
+       + "TAGLIA A META' PER LUNGO. La vescia dentro e' bianca e omogenea; "
+       + "l'uovo di amanita mostra gia' abbozzati cappello, lamelle e gambo."],
+      ["Scleroderma citrinum", "grave",
+       "Corteccia spessa e dura, giallastra, e all'interno carne NERA o "
+       + "violacea gia' da giovane. Provoca disturbi gastrointestinali."],
+    ],
+  },
+  {
+    id: "prunulo",
+    commestibilita: "buono",
+    consumo: "Buon commestibile, molto profumato. Va cotto.",
+    nome: "Fungo di farina",
+    sci: "Clitopilus prunulus",
+    habitat: "bosco",
+    stagione: "Da agosto a ottobre",
+    dove: "Radure e bordi di faggeta e querceta. I raccoglitori lo cercano "
+        + "anche come indicatore: cresce spesso vicino ai porcini.",
+    segni: "Piccolo, bianco-grigiastro, cappello opaco e un po' irregolare. "
+         + "Lamelle DECORRENTI sul gambo, bianche poi ROSATE. Odore FORTE di "
+         + "farina fresca, che e' il carattere piu' netto.",
+    confusioni: [
+      ["Clitocybe dealbata e C. rivulosa", "mortale",
+       "Bianche, stessa taglia, stessi prati e bordi. Contengono muscarina in "
+       + "dose pericolosa. Differenza: le loro lamelle restano BIANCHE e la "
+       + "sporata e' bianca, mentre nel fungo di farina lamelle e sporata "
+       + "virano al rosa. Nel dubbio si lascia."],
+    ],
+  },
+  {
     id: "sanguinello",
+    commestibilita: "buono",
+    consumo: "Meglio alla griglia o in padella. In umido diventa molliccio.",
     nome: "Sanguinello",
     sci: "Lactarius deliciosus",
     habitat: "bosco",

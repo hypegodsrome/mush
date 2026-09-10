@@ -446,6 +446,10 @@ function avviaMappa() {
     $("#legenda-corpo").hidden = aperta;
   });
 
+  // Sul telefono il pannello parte chiuso: aperto coprirebbe la mappa, che e'
+  // la ragione per cui si e' su questa schermata.
+  if (matchMedia("(max-width: 700px)").matches) $("#pannello").classList.add("is-chiuso");
+
   disegnaCrescita();
   accendiStrato("crescita", true);
   aggiornaFonteMappa();
@@ -598,12 +602,31 @@ function disegnaMappa() { if (stato.mappa) disegnaCrescita(); }
 // ==========================================================================
 let specieMontate = false;
 let SP = null;
+let CREDITI = {};
+
+/* Quali confusioni hanno una foto. La chiave e' un pezzo del nome scritto in
+   guida.js: si cerca per sottostringa perche' li' i nomi sono discorsivi
+   ("Amanita phalloides e Amanita verna", "Uova di Amanita"). */
+const SOSIA_FOTO = {
+  "phalloides": "x-phalloides",
+  "verna": "x-verna",
+  "uova": "x-verna",
+  "galerina": "x-galerina",
+  "omphalotus": "x-omphalotus",
+  "entoloma": "x-entoloma",
+  "xanthodermus": "x-xanthodermus",
+  "clitocybe": "x-clitocybe",
+  "scleroderma": "x-scleroderma",
+};
 
 async function montaSpecie() {
   if (specieMontate) return;
   specieMontate = true;
 
   SP = await import("./guida.js");
+  // I crediti sono un obbligo di licenza, non un dettaglio: se non arrivano
+  // le foto non si mostrano.
+  CREDITI = await fetch("assets/specie/crediti.json").then((r) => r.json()).catch(() => ({}));
 
   $("#sp-filtri").innerHTML =
     `<button class="sp-f is-on" data-h="all" type="button">Tutte</button>`
@@ -624,36 +647,63 @@ async function montaSpecie() {
 }
 
 function schedaSpecie(sp) {
-  const [etichettaHab] = [SP.HABITAT[sp.habitat] || sp.habitat];
-  // Il rischio piu' alto fra le confusioni decide il colore del bordo: e'
-  // l'informazione che deve arrivare per prima, prima ancora del nome.
+  const etichettaHab = SP.HABITAT[sp.habitat] || sp.habitat;
+
+  // Rischio piu' alto fra i SOSIA. Va detto che riguarda i sosia, non la
+  // specie: un "Grave" appiccicato alla scheda "Porcini" si legge come
+  // "il porcino e' pericoloso", che e' falso e pericoloso a sua volta.
   const ordine = ["mortale", "grave", "lieve", "nessuna"];
   const peggio = ordine.find((g) => sp.confusioni.some((c) => c[1] === g)) || "nessuna";
 
-  const cerca = [sp.nome, sp.sci, etichettaHab].join(" ").toLowerCase();
+  const [comEt] = SP.COMMESTIBILITA[sp.commestibilita] || ["", ""];
+  const cr = CREDITI[sp.id];
+  const cerca = [sp.nome, sp.sci, etichettaHab, comEt].join(" ").toLowerCase();
 
-  return `<article class="sp-card r-${peggio}" data-h="${esc(sp.habitat)}"
+  return `<article class="sp-card c-${esc(sp.commestibilita)}" data-h="${esc(sp.habitat)}"
             data-cerca="${esc(cerca)}">
-    <div class="sp-top">
-      <span class="pill">${esc(etichettaHab)}</span>
-      <span class="sp-r sp-r-${peggio}">${esc(SP.GRAVITA[peggio][0])}</span>
-    </div>
-    <h3 class="sp-nome">${esc(sp.nome)}</h3>
-    <em class="sp-sci">${esc(sp.sci)}</em>
-    <dl class="sp-dl">
-      <dt>Stagione</dt><dd>${esc(sp.stagione)}</dd>
-      <dt>Dove</dt><dd>${esc(sp.dove)}</dd>
-      <dt>Come si riconosce</dt><dd>${esc(sp.segni)}</dd>
-      ${sp.nota ? `<dt>Attenzione</dt><dd>${esc(sp.nota)}</dd>` : ""}
-    </dl>
-    <button class="sp-piu" type="button">Sosia e confusioni (${sp.confusioni.length})</button>
-    <div class="sp-conf">
-      ${sp.confusioni.map(([nome, g, testo]) => `
-        <div class="sp-c sp-c-${esc(g)}">
-          <b>${esc(nome)}</b>
-          <span class="sp-r sp-r-${esc(g)}">${esc(SP.GRAVITA[g][1])}</span>
-          <p>${esc(testo)}</p>
-        </div>`).join("")}
+    ${cr ? `<figure class="sp-foto">
+        <img src="assets/specie/${esc(sp.id)}.jpg" alt="${esc(sp.nome)}"
+             loading="lazy" decoding="async" width="720" height="540">
+        <figcaption>${esc(cr.autore || "autore ignoto")} · ${esc(cr.licenza || "")}
+          <a href="${esc(cr.pagina || "#")}" rel="noopener" target="_blank">Commons</a>
+        </figcaption>
+      </figure>` : ""}
+
+    <div class="sp-corpo">
+      <div class="sp-top">
+        <span class="pill">${esc(etichettaHab)}</span>
+        <span class="sp-com sp-com-${esc(sp.commestibilita)}">${esc(comEt)}</span>
+      </div>
+      <h3 class="sp-nome">${esc(sp.nome)}</h3>
+      <em class="sp-sci">${esc(sp.sci)}</em>
+      <dl class="sp-dl">
+        <dt>Stagione</dt><dd>${esc(sp.stagione)}</dd>
+        <dt>Dove</dt><dd>${esc(sp.dove)}</dd>
+        <dt>Come si riconosce</dt><dd>${esc(sp.segni)}</dd>
+        <dt>In cucina</dt><dd>${esc(sp.consumo)}</dd>
+        ${sp.nota ? `<dt>Attenzione</dt><dd>${esc(sp.nota)}</dd>` : ""}
+      </dl>
+      <button class="sp-piu r-${peggio}" type="button">
+        Sosia e confusioni (${sp.confusioni.length}) &middot;
+        rischio ${esc(SP.GRAVITA[peggio][0].toLowerCase())}
+      </button>
+      <div class="sp-conf">
+        ${sp.confusioni.map(([nome, g, testo]) => {
+          const n = nome.toLowerCase();
+          const id = Object.entries(SOSIA_FOTO).find(([k]) => n.includes(k))?.[1] || null;
+          const c = id && CREDITI[id];
+          return `<div class="sp-c sp-c-${esc(g)}">
+            ${c ? `<img class="sp-c-foto" src="assets/specie/${esc(id)}.jpg"
+                      alt="${esc(nome)}" loading="lazy" decoding="async"
+                      title="${esc(nome)} — ${esc(c.autore || "")} · ${esc(c.licenza || "")}">` : ""}
+            <div>
+              <b>${esc(nome)}</b>
+              <span class="sp-r sp-r-${esc(g)}">${esc(SP.GRAVITA[g][1])}</span>
+              <p>${esc(testo)}</p>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
     </div>
   </article>`;
 }
