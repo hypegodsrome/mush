@@ -1224,7 +1224,10 @@ function antNome(a) {
 function antFumetto(a, raggio) {
   const righe = [];
   if (a.op) righe.push(`Gestore dichiarato in OSM: ${esc(a.op)}`);
-  if (a.h) righe.push(`Alto ${String(a.h).replace(".", ",")} m`);
+  // esc() anche qui: oggi antenne.py garantisce un numero, ma il giorno in
+  // cui quel filtro cambiasse, il campo arriverebbe grezzo da OSM - dove
+  // scrive chiunque nel mondo - dritto dentro innerHTML.
+  if (a.h) righe.push(`Alto ${esc(String(a.h).replace(".", ","))} m`);
   righe.push(`Cerchio disegnato: ${String(raggio / 1000).replace(".", ",")} km, stimato`);
 
   return `<b>${esc(antNome(a))}</b>
