@@ -394,11 +394,15 @@ function renderClassifica() {
 
 const CORINE = "https://image.discomap.eea.europa.eu/arcgis/services/Corine/CLC2018_WM/MapServer/WMSServer";
 
-/* Sentieri segnati: tessere di Waymarked Trails, che rende i percorsi
-   escursionistici di OpenStreetMap. Sui Simbruini ci sono 115 percorsi
-   mappati con sigla CAI e nome. Trasparente, quindi si sovrappone a
-   qualunque sfondo. */
-const SENTIERI = "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png";
+/* Sentieri segnati CAI, da OpenStreetMap via scripts/sentieri.py.
+   Disegnati come linee e non come tessere: lo strato a tessere di Waymarked
+   Trails si ferma allo zoom 16, e oltre le sigle diventano illeggibili
+   proprio quando servono. Le linee restano nitide a ogni zoom e si cliccano.
+   Il file pesa 288 KB, quindi si carica solo alla prima accensione. */
+const ZOOM_SIGLE = 13;   // sotto, le etichette sarebbero un groviglio
+const PUNTI_PER_SIGLA = 70;   // ogni quanti punti ripetere la sigla.
+                              // A 25 il tracciato diventava una collana di
+                              // etichette attaccate e non si leggeva la mappa.
 
 const BASI = {
   osm: ["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -427,11 +431,6 @@ function avviaMappa() {
   // ingrandisce l'ultimo livello buono - sgranato, ma e' una mappa di
   // copertura del suolo, non una foto: la sgranatura e' onesta, visto che
   // il dato originale ha celle da 100 m.
-  stato.strati.sentieri = L.tileLayer(SENTIERI, {
-    maxZoom: 18, opacity: 0.85,
-    attribution: '<a href="https://hiking.waymarkedtrails.org">Waymarked Trails</a>',
-  });
-
   stato.strati.boschi = L.tileLayer.wms(CORINE, {
     layers: "12", format: "image/png", transparent: true, version: "1.3.0",
     opacity: 0.7, maxNativeZoom: 11, maxZoom: 19,
@@ -529,6 +528,9 @@ async function accendiStrato(nome, acceso) {
       return;
     }
   }
+  if (nome === "sentieri" && acceso && !stato.strati.sentieri) {
+    await disegnaSentieri();
+  }
   if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
 
   const l = stato.strati[nome];
@@ -541,6 +543,63 @@ async function accendiStrato(nome, acceso) {
 /* Griglia nazionale di Meteo Funghi: 820 celle da 0,2 gradi su tutta Italia.
    Si costruisce solo alla prima accensione, perche' ottocento cerchi disegnati
    sempre rallentano la mappa anche quando lo strato e' spento. */
+/* I sentieri sono due passate di linea: una chiara e spessa sotto che fa da
+   bordo, una rossa sottile sopra. Senza il bordo, una traccia rossa sopra il
+   verde del bosco o l'arancione del Corine sparisce. */
+async function disegnaSentieri() {
+  let d;
+  try {
+    d = await fetch("data/sentieri.json", { cache: "force-cache" }).then((r) => r.json());
+  } catch (e) {
+    $("#map-src").textContent = "Sentieri non disponibili: " + (e.message || e);
+    return;
+  }
+
+  const gruppo = L.layerGroup();
+  for (const p of d.percorsi) {
+    for (const linea of p.linee) {
+      // Il tracciato si spezza in tratti corti e a ciascuno si attacca la
+      // sigla: cosi' il numero si ripete lungo il percorso, come i segnavia
+      // veri, invece di comparire una volta sola a meta'.
+      // I tooltip li posiziona Leaflet: con i divIcon restavano tutti
+      // accatastati nell'angolo della mappa.
+      for (let k = 0; k < linea.length - 1; k += PUNTI_PER_SIGLA) {
+        const tratto = linea.slice(k, Math.min(k + PUNTI_PER_SIGLA + 1, linea.length));
+        if (tratto.length < 2) continue;
+
+        // Due passate: una chiara e spessa che fa da bordo, una rossa sopra.
+        // Senza il bordo, il rosso sparisce sul verde del bosco.
+        L.polyline(tratto, { color: "#ffffff", weight: 5, opacity: 0.75,
+                             lineCap: "round", interactive: false }).addTo(gruppo);
+        const l = L.polyline(tratto, { color: "#d3352b", weight: 2.4, opacity: 0.95,
+                                       dashArray: "7 5", lineCap: "round" }).addTo(gruppo);
+
+        // Un solo bindTooltip per layer: il secondo sostituisce il primo e la
+        // sigla permanente non veniva mai creata. Il nome per esteso passa
+        // nel popup, che e' un canale separato.
+        l.bindPopup(`<b>${esc(p.ref || "")}</b><br>${esc(p.nome || "senza nome")}`);
+        if (p.ref) {
+          l.bindTooltip(p.ref, {
+            permanent: true, direction: "center", className: "sent-sigla",
+          });
+        }
+      }
+    }
+  }
+
+  stato.strati.sentieri = gruppo;
+  stato.mappa.on("zoomend", aggiornaSigle);
+  aggiornaSigle();
+}
+
+/* Sotto un certo zoom le sigle si accavallano e non si legge piu' niente:
+   meglio nasconderle che stampare un groviglio. Si agisce sul contenitore
+   della mappa, cosi' vale anche per i tooltip creati dopo. */
+function aggiornaSigle() {
+  const mostra = stato.mappa.getZoom() >= ZOOM_SIGLE;
+  stato.mappa.getContainer().classList.toggle("senza-sigle", !mostra);
+}
+
 function disegnaMF() {
   const mf = stato.dati.mf;
   if (!mf || !mf.punti) return;

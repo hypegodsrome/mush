@@ -15,6 +15,9 @@ import {
 
 export const EMAIL_ADMIN = "eug2002@gmail.com";
 
+/** Due accessi entro questa finestra sono la stessa sessione. */
+const SESSIONE_MS = 30 * 60 * 1000;
+
 export const isAdmin = (u) => !!u && u.email === EMAIL_ADMIN;
 
 /** Registra l'accesso e restituisce lo stato dell'utente.
@@ -43,13 +46,21 @@ export async function registraAccesso(app, u) {
     const dati = attuale.data();
     if (dati.bandito === true) return { bandito: true, nuovo: false, dati };
 
-    // Le regole ammettono in aggiornamento solo questi tre campi.
+    // onAuthStateChanged scatta a ogni caricamento di pagina e a ogni rinnovo
+    // del token, circa ogni ora. Incrementando sempre, "accessi" finiva per
+    // contare le pageview: cinquanta ricariche di prova diventavano cinquanta
+    // accessi. Si conta una sessione sola se l'ultima e' piu' vecchia di
+    // mezz'ora, e la data si aggiorna comunque.
+    const precedente = dati.ultimo_accesso?.toDate?.();
+    const nuovaSessione = !precedente
+      || (Date.now() - precedente.getTime()) > SESSIONE_MS;
+
     await updateDoc(rif, {
       ultimo_accesso: serverTimestamp(),
-      accessi: increment(1),
+      accessi: nuovaSessione ? increment(1) : (dati.accessi || 1),
       nome: u.displayName || dati.nome || "",
     });
-    return { bandito: false, nuovo: false, dati };
+    return { bandito: false, nuovo: false, nuovaSessione, dati };
   } catch (e) {
     console.warn("registro non disponibile:", e.code || e.message);
     return { bandito: false, nuovo: false, errore: e.code || e.message };

@@ -59,7 +59,10 @@ service cloud.firestore {
                         && request.resource.data.email == resource.data.email
                         && request.resource.data.primo_accesso == resource.data.primo_accesso
                         && request.resource.data.accessi is int
-                        && request.resource.data.accessi == resource.data.accessi + 1
+                        // Fermo o +1: l'interfaccia conta una sessione sola
+                        // entro la mezz'ora, quindi a volte non incrementa.
+                        && (request.resource.data.accessi == resource.data.accessi
+                            || request.resource.data.accessi == resource.data.accessi + 1)
                         && request.resource.data.nome is string
                         && request.resource.data.nome.size() <= 120
                         && request.resource.data.diff(resource.data).affectedKeys()

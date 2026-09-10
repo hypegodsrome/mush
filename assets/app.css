@@ -1201,3 +1201,23 @@ select {
   .cam .cam-sub { display: none; }
   .cams-off { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }
+
+
+/* ---------- sigle dei sentieri ---------- */
+/* Come i segnavia sul sasso: numero scuro su fondo chiaro, bordo rosso.
+   Il fondo pieno serve perche' sopra una mappa a colori il testo nudo non
+   si legge in nessun caso. */
+.leaflet-tooltip.sent-sigla {
+  padding: 1px 5px;
+  background: #fffdf8;
+  border: 1.5px solid #d3352b;
+  border-radius: 4px;
+  color: #241f18;
+  font: 700 10px/1.35 var(--sans);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgb(0 0 0 / .35);
+  pointer-events: none;
+}
+.leaflet-tooltip.sent-sigla::before { display: none; }   /* niente punta */
+
+.senza-sigle .leaflet-tooltip.sent-sigla { display: none; }

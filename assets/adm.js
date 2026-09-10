@@ -128,7 +128,7 @@ function disegna() {
     ["Registrati", utenti.length],
     ["Attivi", utenti.length - banditi],
     ["Banditi", banditi],
-    ["Accessi totali", utenti.reduce((s, u) => s + num(u.accessi), 0)],
+    ["Sessioni totali", utenti.reduce((s, u) => s + num(u.accessi), 0)],
   ].map(([k, v]) => `<div class="obs"><div class="obs-k">${esc(k)}</div>
       <div class="obs-v">${v}</div></div>`).join("");
 
@@ -145,7 +145,7 @@ function disegna() {
         <div class="ut-dati">
           <span>primo ${esc(data(u.primo_accesso))}</span>
           <span>ultimo ${esc(data(u.ultimo_accesso))}</span>
-          <span>${num(u.accessi)} access${num(u.accessi) === 1 ? "o" : "i"}</span>
+          <span>${num(u.accessi)} session${num(u.accessi) === 1 ? "e" : "i"}</span>
         </div>
         <div class="ut-azioni">
           ${u.email === EMAIL_ADMIN ? `<span class="muted small">non bandibile</span>` : `
