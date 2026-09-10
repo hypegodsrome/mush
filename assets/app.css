@@ -1461,3 +1461,75 @@ select {
   .ora-zone { grid-template-columns: repeat(auto-fit, minmax(min(104px, 100%), 1fr)); }
   .oz-t { font-size: 1.2rem; }
 }
+
+/* ==========================================================================
+   Riquadro dell'antenna sulla mappa
+   ========================================================================== */
+
+/* Sta sopra la mappa e sotto il pannello: chi guida deve vederlo con il
+   pannello chiuso, e quando il pannello si apre non deve dargli fastidio. */
+.ant-hud {
+  position: absolute; z-index: 415;
+  top: 0.75rem; left: 0.75rem;
+  display: flex; gap: 0.4rem; align-items: stretch;
+  max-width: min(420px, calc(100% - 5.5rem));
+}
+.ant-hud[hidden] { display: none; }
+
+.ant-hud-box {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.5rem 0.7rem; text-align: left;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  box-shadow: var(--sh-2); color: var(--ink); cursor: pointer;
+}
+.ant-hud-i { font-size: 1.05rem; line-height: 1; flex: 0 0 auto; }
+.ant-hud-txt { min-width: 0; display: grid; }
+.ant-hud-txt b {
+  font-size: 0.84rem; font-weight: 700; line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ant-hud-txt small {
+  font-size: 0.7rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+/* Il numero dei passaggi: se e' zero sparisce, perche' uno zero perenne
+   diventa rumore e smette di essere notato quando cambia. */
+.ant-hud-n {
+  flex: 0 0 auto; min-width: 1.4rem; text-align: center;
+  padding: 0.1rem 0.3rem; border-radius: 999px;
+  background: var(--acc); color: #fff;
+  font-size: 0.7rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+
+.ant-hud-b {
+  flex: 0 0 auto; width: 40px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--ink-3); font-size: 1.05rem; line-height: 1;
+  cursor: pointer; box-shadow: var(--sh-1);
+}
+.ant-hud-b.is-on { color: #fff; background: var(--acc); border-color: var(--acc); }
+
+@media (max-width: 760px) {
+  /* Sul telefono il riquadro prende tutta la larghezza tranne il posto del
+     pulsante degli strati, e sta in alto: e' dove cade lo sguardo quando il
+     telefono e' sul cruscotto. */
+  .ant-hud {
+    top: 0.6rem; left: 0.6rem;
+    max-width: calc(100% - 4.4rem);
+  }
+  .ant-hud-box { padding: 0.6rem 0.7rem; }
+  .ant-hud-txt b { font-size: 0.88rem; }
+  .ant-hud-b { width: 46px; }
+  /* Con il foglio aperto sparisce insieme agli altri comandi: li' il dato
+     c'e' gia', scritto per esteso dentro il pannello. */
+  .mappa-scena:has(.pannello:not(.is-chiuso)) .ant-hud {
+    opacity: 0; pointer-events: none;
+  }
+  /* La legenda scende sotto il riquadro, altrimenti si accavallano. */
+  .mappa-scena:has(.ant-hud:not([hidden])) .mappa-legenda { top: 4.4rem; }
+}

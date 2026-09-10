@@ -187,6 +187,25 @@
     <button id="pannello-tog" class="pannello-tog" type="button"
             aria-label="Mostra o nascondi gli strati" title="Strati">&#8801;</button>
 
+    <!-- Il riquadro dell'antenna vive sulla mappa e non dentro il pannello:
+         in auto il pannello e' un foglio che copre lo schermo, e chi guida
+         deve vedere insieme la strada sulla mappa e l'antenna piu' vicina.
+         Compare solo con lo strato acceso. -->
+    <div id="ant-hud" class="ant-hud" hidden>
+      <button id="ant-hud-apri" class="ant-hud-box" type="button"
+              aria-label="Apri i dettagli dell'antenna">
+        <span class="ant-hud-i" aria-hidden="true">&#128225;</span>
+        <span class="ant-hud-txt">
+          <b id="ant-hud-nome">In attesa del GPS&hellip;</b>
+          <small id="ant-hud-dist"></small>
+        </span>
+        <span id="ant-hud-n" class="ant-hud-n" hidden>0</span>
+      </button>
+      <button id="ant-hud-segui" class="ant-hud-b is-on" type="button"
+              aria-pressed="true" title="Segui la mia posizione"
+              aria-label="Segui la mia posizione">&#9678;</button>
+    </div>
+
     <aside id="pannello" class="pannello">
       <div class="pannello-cap">
         <span>Strati e luoghi</span>
@@ -285,6 +304,9 @@
             d&rsquo;aria</strong>, calcolata dal GPS. In montagna la copertura la
             decide il rilievo, non un cerchio su una mappa.
           </p>
+          <span class="strato-et">Con lo strato acceso il riquadro resta sulla
+            mappa e lo schermo non si spegne da solo, per poterlo guardare in
+            viaggio. Consuma batteria: spegnilo quando hai finito.</span>
           <div id="ant-vivo" class="ant-vivo" hidden>
             <span class="strato-et">Antenna pi&ugrave; vicina (stima geometrica)</span>
             <strong id="ant-nome" class="ant-nome">&mdash;</strong>

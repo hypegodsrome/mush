@@ -480,6 +480,23 @@ function avviaMappa() {
   $("#pannello-chiudi").addEventListener("click", () =>
     $("#pannello").classList.add("is-chiuso"));
 
+  // Il riquadro dell'antenna: toccarlo apre il pannello sul suo dettaglio.
+  $("#ant-hud-apri").addEventListener("click", () => {
+    $("#pannello").classList.remove("is-chiuso");
+    $("#ant-vivo")?.scrollIntoView({ block: "center", behavior: "smooth" });
+  });
+  $("#ant-hud-segui").addEventListener("click", () => {
+    antSegui = !antSegui;
+    antBottoneSegui();
+  });
+  // Se trascina la mappa sta guardando altrove di proposito: inseguirlo
+  // gli strapperebbe la vista di mano al primo aggiornamento del GPS.
+  stato.mappa.on("dragstart", () => {
+    if (!antSegui) return;
+    antSegui = false;
+    antBottoneSegui();
+  });
+
   $("#legenda-tog").addEventListener("click", (e) => {
     const aperta = e.currentTarget.getAttribute("aria-expanded") === "true";
     e.currentTarget.setAttribute("aria-expanded", String(!aperta));
@@ -1331,14 +1348,82 @@ function antAggiorna(pos) {
     antIo.setLatLng([lat, lon]);
   }
 
-  antScrivi(antNome(scelta),
-    `${Math.round(dScelta)} m in linea d'aria`
-    + (acc ? ` · GPS ±${Math.round(acc)} m` : ""));
+  const sotto = `${Math.round(dScelta)} m in linea d'aria`
+    + (acc ? ` · GPS ±${Math.round(acc)} m` : "");
+  antScrivi(antNome(scelta), sotto);
+  // Sul riquadro il nome sta su una riga sola: le coordinate fra parentesi,
+  // utili nel fumetto, qui non ci starebbero e non servono.
+  antHud(antNome(scelta).replace(/\s*\([^)]*\)\s*$/, ""), sotto);
+
+  // In auto la mappa deve stare addosso a chi si muove, altrimenti dopo un
+  // chilometro si guarda un punto vuoto. Ma se l'utente trascina la mappa
+  // per guardare avanti, l'inseguimento si spegne: e' lui che comanda.
+  if (antSegui && stato.mappa) {
+    stato.mappa.setView([lat, lon],
+      Math.max(stato.mappa.getZoom(), 13), { animate: true });
+  }
 }
+
+/* Il riquadro sulla mappa.
+ *
+ * Il pannello degli strati, sul telefono, e' un foglio che copre lo schermo:
+ * chi lo apre non vede piu' la mappa. Ma la domanda "a che antenna sono
+ * vicino" si fa mentre ci si muove, guardando dove si sta andando. Quindi il
+ * dato vivo esce dal pannello e resta sopra la mappa, con il pannello chiuso.
+ */
+let antSegui = true;
+let antVeglia = null;          // Wake Lock: lo schermo che non si spegne
+
+function antHud(nome, dist) {
+  const n = $("#ant-hud-nome"), d = $("#ant-hud-dist"), c = $("#ant-hud-n");
+  if (n) n.textContent = nome;
+  if (d) d.textContent = dist || "";
+  if (c) {
+    c.textContent = String(antStorico.length);
+    c.hidden = antStorico.length === 0;
+  }
+}
+
+/* Lo schermo che si spegne a meta' strada rende inutile tutto il resto: in
+ * auto il telefono sta sul cruscotto e nessuno lo tocca per mezz'ora. Il
+ * blocco si chiede solo con lo strato acceso, e si restituisce appena si
+ * spegne - altrimenti sarebbe una batteria prosciugata a tradimento.
+ *
+ * Android riprende il blocco da solo quando la pagina torna visibile solo se
+ * glielo si richiede: da qui l'ascolto su visibilitychange.
+ */
+async function antAccendiSchermo() {
+  if (!("wakeLock" in navigator) || antVeglia) return;
+  try {
+    antVeglia = await navigator.wakeLock.request("screen");
+    antVeglia.addEventListener("release", () => { antVeglia = null; });
+  } catch (e) {
+    // Succede se la pagina non e' visibile o la batteria e' agli sgoccioli:
+    // non e' un errore da mostrare, il resto funziona lo stesso.
+    console.warn("schermo sempre acceso non concesso:", e.message);
+  }
+}
+
+function antSpegniSchermo() {
+  if (!antVeglia) return;
+  antVeglia.release().catch(() => {});
+  antVeglia = null;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && antVigilanza !== null) {
+    antAccendiSchermo();
+  }
+});
 
 function avviaAntenne() {
   const box = $("#ant-vivo");
   if (box) box.hidden = false;
+  const hud = $("#ant-hud");
+  if (hud) hud.hidden = false;
+  antSegui = true;
+  antBottoneSegui();
+  antAccendiSchermo();
   antElenco();
 
   if (!ANT?.antenne?.length) {
@@ -1379,6 +1464,16 @@ function fermaAntenne() {
   antVicina = null;
   const box = $("#ant-vivo");
   if (box) box.hidden = true;
+  const hud = $("#ant-hud");
+  if (hud) hud.hidden = true;
+  antSpegniSchermo();
+}
+
+function antBottoneSegui() {
+  const b = $("#ant-hud-segui");
+  if (!b) return;
+  b.classList.toggle("is-on", antSegui);
+  b.setAttribute("aria-pressed", String(antSegui));
 }
 
 // ==========================================================================
