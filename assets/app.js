@@ -230,6 +230,7 @@ async function avvia() {
 
   riempiSelettori();
   renderPrevisione();
+  renderStagioni();
   renderModello();
   renderFooter();
   attivaTab();
@@ -717,6 +718,77 @@ function renderChart(s) {
 // ==========================================================================
 // Vista: modello
 // ==========================================================================
+/* ---------- calendario delle buttate ----------
+   Le finestre stagionali sono gia' nel modello: qui vengono solo disegnate,
+   mese per mese, per rispondere a colpo d'occhio a "quando esce cosa".
+   Nessun dato nuovo, solo lo stesso trapezio che usa il punteggio. */
+
+const MESI_BREVI = ["G", "F", "M", "A", "M", "G", "L", "A", "S", "O", "N", "D"];
+const MESI_LUNGHI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+  "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+
+const doyDa = (m, g) => Math.round(
+  (Date.UTC(2001, m - 1, g) - Date.UTC(2001, 0, 1)) / 86400000) + 1;
+
+/** Stesso trapezio del modello: 0 fuori, 1 nel cuore della finestra. */
+function trapezio(x, a, b, c, d) {
+  if (x <= a || x >= d) return 0;
+  if (x < b) return (x - a) / (b - a);
+  if (x <= c) return 1;
+  return (d - x) / (d - c);
+}
+
+function fattoreStagione(finestre, doy) {
+  return Math.max(...finestre.map((f) => {
+    const [a, b, c, d] = f.map((s) => doyDa(+s.slice(0, 2), +s.slice(3)));
+    return trapezio(doy, a, b, c, d);
+  }));
+}
+
+/** Per un mese intero vale il giorno migliore: un mese in cui la buttata
+ *  parte il 25 e' comunque un mese in cui si va a cercare. */
+function stagioneMese(finestre, mese) {
+  const giorni = new Date(Date.UTC(2001, mese, 0)).getUTCDate();
+  let max = 0;
+  for (let g = 1; g <= giorni; g++) max = Math.max(max, fattoreStagione(finestre, doyDa(mese, g)));
+  return max;
+}
+
+function renderStagioni() {
+  const md = stato.dati.meta.modello;
+  const oggi = giorno(stato.dati.giorno);
+  const meseOra = oggi.getUTCMonth() + 1;
+
+  const intestazione = MESI_BREVI.map((m, i) =>
+    `<div class="cal-m${i + 1 === meseOra ? " is-ora" : ""}">${m}</div>`).join("");
+
+  const righe = Object.entries(md.specie).map(([k, v]) => {
+    const celle = MESI_BREVI.map((_, i) => {
+      const mese = i + 1;
+      const f = stagioneMese(v.stagione, mese);
+      const cls = f >= 0.99 ? "is-picco" : f > 0.35 ? "is-buono" : f > 0 ? "is-margine" : "";
+      const stato_ = f >= 0.99 ? "piena stagione" : f > 0.35 ? "in stagione"
+        : f > 0 ? "inizio o fine stagione" : "fuori stagione";
+      return `<div class="cal-c ${cls}${mese === meseOra ? " is-ora" : ""}"
+        title="${esc(v.nome.split(" (")[0])} — ${MESI_LUNGHI[i]}: ${stato_}"></div>`;
+    }).join("");
+    return `<div class="cal-nome">${esc(v.nome.split(" (")[0])}</div>
+            <div class="cal-riga">${celle}</div>`;
+  }).join("");
+
+  $("#calendario").innerHTML = `
+    <div class="cal">
+      <div class="cal-nome"></div><div class="cal-riga">${intestazione}</div>
+      ${righe}
+    </div>
+    <div class="cal-legenda">
+      <span><i class="is-picco"></i> piena stagione</span>
+      <span><i class="is-buono"></i> in stagione</span>
+      <span><i class="is-margine"></i> inizio o fine</span>
+      <span><i></i> fuori stagione</span>
+    </div>`;
+}
+
 function renderModello() {
   const md = stato.dati.meta.modello;
   $("#pesi").innerHTML = Object.entries(md.pesi)

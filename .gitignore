@@ -11,3 +11,7 @@ st.html
 mf.js
 climalocalita.php_*.html
 grafici.php_*.html
+
+# copia locale usa-e-getta per ispezione visiva
+_anteprima.html
+assets/_anteprima.js

@@ -1,4 +1,23 @@
-/* Mush — bosco di faggio a settembre: terra, muschio, castagna. */
+/* Mush — bosco di faggio a settembre: terra, muschio, castagna.
+   Fraunces per i titoli, Manrope per il testo. Self-hosted, non da CDN:
+   cosi' font-src puo' restare 'self' e nessuno sa cosa leggi. Entrambi OFL. */
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("fonts/fraunces-600.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope-400.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope-600.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+
 
 /* Tre stati: nessun attributo = segui il sistema, data-tema="chiaro" e
    data-tema="scuro" = scelta esplicita, che deve vincere in entrambe le
@@ -21,8 +40,18 @@
   --chart-rain: #3d6f9e;
   --chart-temp: #a85c19;
 
-  --r:         14px;
-  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Scala dei raggi: piu' e' grande la superficie, piu' e' morbido l'angolo. */
+  --r-sm:      10px;
+  --r:         16px;
+  --r-lg:      22px;
+
+  /* Ombre a due strati: una stretta che stacca dal fondo, una larga e
+     tenue che da' profondita'. Una sola ombra sembra sempre finta. */
+  --sh-1: 0 1px 2px rgb(0 0 0 / .04), 0 2px 8px rgb(0 0 0 / .04);
+  --sh-2: 0 1px 2px rgb(0 0 0 / .05), 0 8px 28px rgb(0 0 0 / .08);
+
+  --display: "Fraunces", ui-serif, Georgia, serif;
+  --sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 }
 
@@ -44,6 +73,8 @@
   --danger:    #e0705a;
   --chart-rain: #5a8cbe;
   --chart-temp: #d98a3d;
+  --sh-1: 0 1px 2px rgb(0 0 0 / .3), 0 2px 8px rgb(0 0 0 / .25);
+  --sh-2: 0 1px 2px rgb(0 0 0 / .35), 0 10px 30px rgb(0 0 0 / .4);
 }
 
 /* Senza scelta esplicita comanda il sistema: qui si torna al chiaro. */
@@ -64,6 +95,10 @@
     --danger:    #a83a26;
     --chart-rain: #3d6f9e;
     --chart-temp: #a85c19;
+    /* Vanno ripetute anche qui: senza, in automatico su sistema chiaro
+       restavano le ombre dense del tema scuro sopra le superfici chiare. */
+    --sh-1: 0 1px 2px rgb(0 0 0 / .04), 0 2px 8px rgb(0 0 0 / .04);
+    --sh-2: 0 1px 2px rgb(0 0 0 / .05), 0 8px 28px rgb(0 0 0 / .08);
   }
 }
 
@@ -79,9 +114,24 @@ body {
   font: 15px/1.55 var(--sans);
 }
 
-h1, h2, h3 { line-height: 1.2; font-weight: 650; letter-spacing: -0.01em; }
-h2 { font-size: 1.05rem; margin: 2rem 0 0.75rem; color: var(--ink); }
+h1, h2, h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+h2 { font-size: 1.4rem; margin: 2.5rem 0 0.85rem; color: var(--ink); }
 h2:first-child { margin-top: 0; }
+
+/* Etichetta breve sopra un titolo: da' contesto senza rubare gerarchia. */
+.eyebrow {
+  display: block;
+  font: 600 0.7rem/1 var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
 p { margin: 0 0 0.9rem; }
 a { color: var(--accent); }
 [hidden] { display: none !important; }
@@ -105,7 +155,7 @@ a { color: var(--accent); }
   padding: 2.5rem 1.75rem;
 }
 .gate-mark { font-size: 2.75rem; line-height: 1; }
-.gate-card h1 { margin: 0.6rem 0 0.2rem; font-size: 1.9rem; }
+.gate-card h1 { margin: 0.6rem 0 0.2rem; font-size: 2.2rem; }
 .gate-sub { color: var(--ink-2); margin-bottom: 1.75rem; }
 .gate-note { color: var(--ink-3); font-size: 0.76rem; margin: 1.25rem 0 0; }
 .gate-err {
@@ -141,7 +191,7 @@ a { color: var(--accent); }
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
-.brand { font-weight: 700; letter-spacing: -0.02em; }
+.brand { font: 600 1.15rem var(--display); letter-spacing: -0.02em; }
 .brand-mark { margin-right: 0.25rem; }
 .top-right { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 .user {
@@ -199,14 +249,38 @@ select {
 }
 
 /* ---------- gauge ---------- */
+/* L'hero resta scuro in entrambi i temi: e' una banda "fotografica", non
+   una superficie dell'interfaccia. Sopra, due strati che gli danno materia -
+   un bagliore caldo fuori asse e una trama di punti - entrambi in CSS, senza
+   immagini da scaricare. */
 .hero {
-  display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: var(--r); padding: 1.5rem;
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap;
+  padding: 1.9rem;
+  border-radius: var(--r-lg);
+  border: 1px solid #3a2a1d;
+  background: linear-gradient(135deg, #1F0F08 0%, #432B1F 55%, #6b3f2a 100%);
+  color: #f4ece0;
+  box-shadow: var(--sh-2);
 }
+.hero::before, .hero::after { content: ""; position: absolute; inset: 0; z-index: -1; }
+.hero::before {
+  background: radial-gradient(circle at 78% 30%, #e08b3f 0%, transparent 55%);
+  opacity: 0.28;
+}
+.hero::after {
+  background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.07;
+}
+.hero .q-spot, .hero .q-lim, .hero .q-peak { color: #cbb9a4; }
+.hero .q-lim strong, .hero .q-peak strong { color: #f4ece0; }
+.hero .q-of { color: #a89178; }
+.gauge-bg { stroke: #ffffff1f; }
 .gauge-wrap { position: relative; width: 132px; height: 132px; flex: 0 0 auto; }
 .gauge { width: 100%; height: 100%; transform: rotate(-90deg); }
 .gauge-bg { fill: none; stroke: var(--bg-2); stroke-width: 11; }
+.gauge-arc { filter: drop-shadow(0 0 6px currentColor); }
 .gauge-arc {
   fill: none; stroke: var(--accent); stroke-width: 11; stroke-linecap: round;
   stroke-dasharray: 327; stroke-dashoffset: 327;
@@ -216,10 +290,10 @@ select {
   position: absolute; inset: 0;
   display: grid; place-content: center; text-align: center;
 }
-.q-val { font: 700 2.3rem/1 var(--sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.q-val { font: 600 2.6rem/1 var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .q-of { font-size: 0.68rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
 .hero-txt { flex: 1 1 15rem; min-width: 0; }
-.q-label { font: 650 1.35rem/1.2 var(--sans); letter-spacing: -0.02em; margin-bottom: 0.35rem; }
+.q-label { font: 600 1.6rem/1.15 var(--display); letter-spacing: -0.02em; margin-bottom: 0.35rem; }
 .q-spot { color: var(--ink-2); font-size: 0.9rem; margin-bottom: 0.6rem; }
 .q-lim, .q-peak { font-size: 0.86rem; color: var(--ink-2); margin-bottom: 0.35rem; }
 .q-lim strong, .q-peak strong { color: var(--ink); font-weight: 600; }
@@ -229,8 +303,9 @@ select {
   margin-top: 0.9rem;
   background: var(--card); border: 1px solid var(--line);
   border-left: 3px solid var(--accent-2);
-  border-radius: 10px; padding: 0.75rem 0.95rem;
+  border-radius: var(--r-sm); padding: 0.75rem 0.95rem;
   font-size: 0.87rem; color: var(--ink-2);
+  box-shadow: var(--sh-1);
 }
 .clima.is-grave { border-left-color: var(--danger); }
 .clima b { color: var(--ink); font-weight: 650; }
@@ -249,7 +324,8 @@ select {
 }
 .day {
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 0.5rem 0.3rem; text-align: center;
+  border-radius: var(--r-sm); padding: 0.5rem 0.3rem; text-align: center;
+  box-shadow: var(--sh-1);
 }
 .day.is-today { border-color: var(--accent); }
 .day-dow { font-size: 0.62rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -263,7 +339,8 @@ select {
 .fat {
   display: grid; grid-template-columns: 8.5rem 1fr auto; align-items: center; gap: 0.75rem;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 0.6rem 0.85rem;
+  border-radius: var(--r-sm); padding: 0.6rem 0.85rem;
+  box-shadow: var(--sh-1);
 }
 .fat-name { font-size: 0.86rem; font-weight: 550; }
 .fat-name small { display: block; color: var(--ink-3); font-size: 0.7rem; font-weight: 400; }
@@ -277,9 +354,10 @@ select {
 .rank {
   display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 0.75rem;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 0.55rem 0.85rem;
+  border-radius: var(--r-sm); padding: 0.55rem 0.85rem;
   cursor: pointer; text-align: left; color: inherit; font: inherit;
   width: 100%;
+  box-shadow: var(--sh-1);
 }
 .rank:hover { border-color: var(--ink-3); }
 .rank.is-on { border-color: var(--accent); }
@@ -292,7 +370,8 @@ select {
 }
 
 /* ---------- mappa ---------- */
-#map { height: 62vh; min-height: 340px; border-radius: var(--r); border: 1px solid var(--line); }
+#map { height: 62vh; min-height: 340px; border-radius: var(--r);
+       border: 1px solid var(--line); box-shadow: var(--sh-1); }
 .leaflet-container { background: var(--bg-2); font: inherit; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: var(--card); color: var(--ink); border: 1px solid var(--line);
@@ -314,6 +393,7 @@ select {
 .cam {
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--r); overflow: hidden;
+  box-shadow: var(--sh-1);
 }
 .cam-head {
   display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem;
@@ -373,7 +453,8 @@ select {
 .stazione { display: grid; gap: 0.7rem; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 .obs {
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 0.75rem 0.9rem;
+  border-radius: var(--r-sm); padding: 0.75rem 0.9rem;
+  box-shadow: var(--sh-1);
 }
 .obs-k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
 .obs-v { font: 650 1.3rem/1.25 var(--sans); font-variant-numeric: tabular-nums; margin-top: 0.15rem; }
@@ -400,6 +481,51 @@ select {
 .mk     { stroke: var(--bg); }
 .mk-sel { stroke: var(--ink); }
 
+/* ---------- calendario delle buttate ---------- */
+.cal {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, auto) 1fr;
+  gap: 0.3rem 0.7rem;
+  align-items: center;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 1rem 1.1rem;
+  box-shadow: var(--sh-1);
+}
+.cal-nome { font-size: 0.82rem; font-weight: 600; }
+.cal-riga { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
+.cal-m {
+  text-align: center; font-size: 0.66rem; font-weight: 600;
+  color: var(--ink-3); letter-spacing: 0.02em;
+}
+.cal-m.is-ora { color: var(--accent); }
+.cal-c {
+  height: 22px; border-radius: 5px;
+  background: var(--bg-2);
+}
+/* Tre intensita' invece di acceso/spento: la stagione non ha un bordo netto. */
+.cal-c.is-margine { background: color-mix(in srgb, var(--accent-2) 28%, var(--bg-2)); }
+.cal-c.is-buono   { background: color-mix(in srgb, var(--accent-2) 62%, var(--bg-2)); }
+.cal-c.is-picco   { background: var(--accent-2); }
+.cal-c.is-ora     { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.cal-legenda {
+  display: flex; flex-wrap: wrap; gap: 0.9rem;
+  margin-top: 0.7rem; font-size: 0.72rem; color: var(--ink-3);
+}
+.cal-legenda span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.cal-legenda i {
+  width: 13px; height: 13px; border-radius: 4px;
+  background: var(--bg-2); display: inline-block;
+}
+.cal-legenda i.is-margine { background: color-mix(in srgb, var(--accent-2) 28%, var(--bg-2)); }
+.cal-legenda i.is-buono   { background: color-mix(in srgb, var(--accent-2) 62%, var(--bg-2)); }
+.cal-legenda i.is-picco   { background: var(--accent-2); }
+
+@media (max-width: 560px) {
+  .cal { grid-template-columns: 1fr; gap: 0.15rem; }
+  .cal-nome { margin-top: 0.5rem; }
+}
+
 /* ---------- amministrazione ---------- */
 .utenti { display: grid; gap: 0.5rem; }
 .utente {
@@ -407,7 +533,8 @@ select {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) auto;
   align-items: center;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 0.7rem 0.9rem;
+  border-radius: var(--r-sm); padding: 0.7rem 0.9rem;
+  box-shadow: var(--sh-1);
 }
 .utente.is-bandito { opacity: 0.65; border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
 .ut-chi { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; min-width: 0; }
@@ -426,7 +553,8 @@ select {
 .pesi, .specie-info, .sorgenti { display: grid; gap: 0.5rem; }
 .peso, .sp, .src {
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 0.7rem 0.9rem;
+  border-radius: var(--r-sm); padding: 0.7rem 0.9rem;
+  box-shadow: var(--sh-1);
 }
 .peso { display: grid; grid-template-columns: 8.5rem 1fr auto; align-items: center; gap: 0.75rem; }
 .peso b { font-size: 0.86rem; font-weight: 550; }
