@@ -64,7 +64,7 @@ jobs:
           grep -oh '[a-z-]*\.\(js\|css\)?v=[0-9a-f]*' index.html adm/index.html \
                assets/app.js assets/adm.js | sort -u
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
