@@ -262,6 +262,14 @@
   <div id="sp-griglia" class="sp-griglia"></div>
   <p id="sp-vuoto" class="muted small" hidden>Nessuna specie corrisponde alla ricerca.</p>
 
+  <div class="sp-leg">
+    <span><i class="c-ottimo"></i> Ottimo</span>
+    <span><i class="c-buono"></i> Buono</span>
+    <span><i class="c-condizioni"></i> Solo cotto a lungo</span>
+    <span class="muted small">Il bordo di ogni foto dice la commestibilit&agrave;.</span>
+  </div>
+  <p id="sp-crediti" class="muted small"></p>
+
   <div class="err" style="margin-top:1.5rem">
     <b>Questa guida non basta per decidere se mangiare un fungo.</b><br>
     Descrive i caratteri principali, non sostituisce l&apos;esame di un micologo.
@@ -400,6 +408,11 @@
     <button id="lb-close" class="btn-ghost" type="button" aria-label="Chiudi">✕</button>
   </div>
   <img id="lb-img" alt="">
+</dialog>
+
+<dialog id="sd" class="sd">
+  <button id="sd-chiudi" class="sd-chiudi" type="button" aria-label="Chiudi">&#10005;</button>
+  <div id="sd-corpo" class="sd-corpo"></div>
 </dialog>
 
 </div><!-- /app -->

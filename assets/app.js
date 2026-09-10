@@ -634,7 +634,7 @@ async function montaSpecie() {
         .map(([k, n]) => `<button class="sp-f" data-h="${esc(k)}" type="button">${esc(n)}</button>`)
         .join("");
 
-  $("#sp-griglia").innerHTML = SP.SPECIE.map(schedaSpecie).join("");
+  $("#sp-griglia").innerHTML = SP.SPECIE.map(tesseraSpecie).join("");
 
   $$("#sp-filtri .sp-f").forEach((b) => b.addEventListener("click", () => {
     $$("#sp-filtri .sp-f").forEach((x) => x.classList.toggle("is-on", x === b));
@@ -642,40 +642,67 @@ async function montaSpecie() {
   }));
   $("#sp-q").addEventListener("input", filtraSpecie);
 
-  $$("#sp-griglia .sp-card").forEach((c) =>
-    $(".sp-piu", c).addEventListener("click", () => c.classList.toggle("is-aperta")));
+  $$("#sp-griglia .sp-t").forEach((t) =>
+    t.addEventListener("click", () => apriSpecie(t.dataset.id)));
+
+  const dlg = $("#sd");
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  $("#sd-chiudi").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("close", () => { $("#sd-corpo").innerHTML = ""; });
+
+  // Crediti raccolti in fondo: CC BY e CC BY-SA vogliono l'attribuzione, e
+  // sulla tessera quadrata non c'e' spazio per metterla su ogni foto.
+  $("#sp-crediti").innerHTML = "Foto: " + Object.entries(CREDITI)
+    .map(([k, c]) => `${esc(c.autore || "ignoto")} (${esc(c.licenza || "")})`)
+    .filter((v, i, a) => a.indexOf(v) === i).join(" · ")
+    + " — via Wikimedia Commons.";
 }
 
-function schedaSpecie(sp) {
+/* Tessera quadrata: foto, nome, e il bordo che dice la commestibilita'.
+   Sul telefono una scheda per fungo con foto grande e testo occupava mezzo
+   schermo a specie: per scorrere quattordici funghi ci voleva un minuto.
+   Cosi' si vedono tutti in una schermata, e il dettaglio si apre al tocco. */
+function tesseraSpecie(sp) {
   const etichettaHab = SP.HABITAT[sp.habitat] || sp.habitat;
+  const [comEt] = SP.COMMESTIBILITA[sp.commestibilita] || ["", ""];
+  const cerca = [sp.nome, sp.sci, etichettaHab, comEt].join(" ").toLowerCase();
 
-  // Rischio piu' alto fra i SOSIA. Va detto che riguarda i sosia, non la
-  // specie: un "Grave" appiccicato alla scheda "Porcini" si legge come
-  // "il porcino e' pericoloso", che e' falso e pericoloso a sua volta.
+  return `<button class="sp-t c-${esc(sp.commestibilita)}" type="button"
+            data-id="${esc(sp.id)}" data-h="${esc(sp.habitat)}"
+            data-cerca="${esc(cerca)}" title="${esc(sp.nome)} — ${esc(comEt)}">
+    <img src="assets/specie/${esc(sp.id)}.jpg" alt="" loading="lazy"
+         decoding="async" width="720" height="540">
+    <span class="sp-t-nome">${esc(sp.nome)}</span>
+  </button>`;
+}
+
+/* Dettaglio: stessa roba di prima, ma dentro un dialog che sul telefono
+   occupa tutto e su schermo largo resta una scheda centrata. */
+function apriSpecie(id) {
+  const sp = SP.SPECIE.find((x) => x.id === id);
+  if (!sp) return;
+  const cr = CREDITI[sp.id];
+  const [comEt] = SP.COMMESTIBILITA[sp.commestibilita] || ["", ""];
   const ordine = ["mortale", "grave", "lieve", "nessuna"];
   const peggio = ordine.find((g) => sp.confusioni.some((c) => c[1] === g)) || "nessuna";
 
-  const [comEt] = SP.COMMESTIBILITA[sp.commestibilita] || ["", ""];
-  const cr = CREDITI[sp.id];
-  const cerca = [sp.nome, sp.sci, etichettaHab, comEt].join(" ").toLowerCase();
+  $("#sd-corpo").innerHTML = `
+    <figure class="sd-foto">
+      <img src="assets/specie/${esc(sp.id)}.jpg" alt="${esc(sp.nome)}">
+      ${cr ? `<figcaption>${esc(cr.autore || "autore ignoto")} &middot;
+        ${esc(cr.licenza || "")}
+        <a href="${esc(cr.pagina || "#")}" rel="noopener" target="_blank">Commons</a>
+      </figcaption>` : ""}
+    </figure>
 
-  return `<article class="sp-card c-${esc(sp.commestibilita)}" data-h="${esc(sp.habitat)}"
-            data-cerca="${esc(cerca)}">
-    ${cr ? `<figure class="sp-foto">
-        <img src="assets/specie/${esc(sp.id)}.jpg" alt="${esc(sp.nome)}"
-             loading="lazy" decoding="async" width="720" height="540">
-        <figcaption>${esc(cr.autore || "autore ignoto")} · ${esc(cr.licenza || "")}
-          <a href="${esc(cr.pagina || "#")}" rel="noopener" target="_blank">Commons</a>
-        </figcaption>
-      </figure>` : ""}
-
-    <div class="sp-corpo">
+    <div class="sd-testo">
       <div class="sp-top">
-        <span class="pill">${esc(etichettaHab)}</span>
+        <span class="pill">${esc(SP.HABITAT[sp.habitat] || sp.habitat)}</span>
         <span class="sp-com sp-com-${esc(sp.commestibilita)}">${esc(comEt)}</span>
       </div>
       <h3 class="sp-nome">${esc(sp.nome)}</h3>
       <em class="sp-sci">${esc(sp.sci)}</em>
+
       <dl class="sp-dl">
         <dt>Stagione</dt><dd>${esc(sp.stagione)}</dd>
         <dt>Dove</dt><dd>${esc(sp.dove)}</dd>
@@ -683,18 +710,17 @@ function schedaSpecie(sp) {
         <dt>In cucina</dt><dd>${esc(sp.consumo)}</dd>
         ${sp.nota ? `<dt>Attenzione</dt><dd>${esc(sp.nota)}</dd>` : ""}
       </dl>
-      <button class="sp-piu r-${peggio}" type="button">
-        Sosia e confusioni (${sp.confusioni.length}) &middot;
-        rischio ${esc(SP.GRAVITA[peggio][0].toLowerCase())}
-      </button>
-      <div class="sp-conf">
+
+      <h4 class="sd-h4 r-${peggio}">Sosia e confusioni &middot;
+        rischio ${esc(SP.GRAVITA[peggio][0].toLowerCase())}</h4>
+      <div class="sp-conf" style="display:grid">
         ${sp.confusioni.map(([nome, g, testo]) => {
           const n = nome.toLowerCase();
-          const id = Object.entries(SOSIA_FOTO).find(([k]) => n.includes(k))?.[1] || null;
-          const c = id && CREDITI[id];
+          const sid = Object.entries(SOSIA_FOTO).find(([k]) => n.includes(k))?.[1] || null;
+          const c = sid && CREDITI[sid];
           return `<div class="sp-c sp-c-${esc(g)}">
-            ${c ? `<img class="sp-c-foto" src="assets/specie/${esc(id)}.jpg"
-                      alt="${esc(nome)}" loading="lazy" decoding="async"
+            ${c ? `<img class="sp-c-foto" src="assets/specie/${esc(sid)}.jpg"
+                      alt="${esc(nome)}" loading="lazy"
                       title="${esc(nome)} — ${esc(c.autore || "")} · ${esc(c.licenza || "")}">` : ""}
             <div>
               <b>${esc(nome)}</b>
@@ -704,15 +730,15 @@ function schedaSpecie(sp) {
           </div>`;
         }).join("")}
       </div>
-    </div>
-  </article>`;
+    </div>`;
+  $("#sd").showModal();
 }
 
 function filtraSpecie() {
   const h = $("#sp-filtri .sp-f.is-on").dataset.h;
   const q = $("#sp-q").value.trim().toLowerCase();
   let visti = 0;
-  $$("#sp-griglia .sp-card").forEach((c) => {
+  $$("#sp-griglia .sp-t").forEach((c) => {
     const ok = (h === "all" || c.dataset.h === h)
             && (!q || c.dataset.cerca.includes(q));
     c.hidden = !ok;

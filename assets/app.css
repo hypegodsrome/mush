@@ -186,6 +186,7 @@ a { color: var(--accent); }
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   min-height: 100dvh;
+  overflow-x: clip;
 }
 
 .rail {
@@ -247,7 +248,11 @@ a { color: var(--accent); }
 
 /* Sotto i 900px il rail diventa una barra in basso, sole icone. */
 @media (max-width: 900px) {
-  .guscio { grid-template-columns: 1fr; }
+  /* minmax(0,1fr) e non 1fr: `1fr` vale `minmax(auto,1fr)`, e `auto` non
+     scende mai sotto il min-content del figlio. Bastava una griglia larga
+     dentro per gonfiare la colonna a 747px su uno schermo da 375, e la
+     pagina finiva meta' fuori: da li' lo zoom impazzito. */
+  .guscio { grid-template-columns: minmax(0, 1fr); }
   .rail {
     position: fixed; bottom: 0; left: 0; right: 0; top: auto;
     height: auto; z-index: 600;
@@ -273,10 +278,13 @@ a { color: var(--accent); }
   body { padding-bottom: 4.2rem; }
 }
 
-main { max-width: 940px; margin: 0 auto; padding: 1.6rem 1.25rem 3rem; width: 100%; }
+main { max-width: 940px; margin: 0 auto; padding: 1.6rem 1.25rem 3rem;
+       width: 100%; min-width: 0; }
+.view { min-width: 0; }
 
 .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
 .controls label {
+  flex: 1 1 13rem; min-width: 0;
   display: flex; flex-direction: column; gap: 0.3rem;
   font-size: 0.75rem; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.06em;
 }
@@ -284,7 +292,7 @@ select {
   background: var(--card); color: var(--ink);
   border: 1px solid var(--line); border-radius: 9px;
   padding: 0.5rem 0.7rem; font: 500 0.9rem var(--sans);
-  min-width: min(15rem, 70vw);
+  min-width: 0; width: 100%; max-width: 22rem;
 }
 
 /* ---------- gauge ---------- */
@@ -331,7 +339,7 @@ select {
 }
 .q-val { font: 600 2.6rem/1 var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .q-of { font-size: 0.68rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
-.hero-txt { flex: 1 1 15rem; min-width: 0; }
+.hero-txt { flex: 1 1 14rem; min-width: 0; }
 .q-label { font: 600 1.6rem/1.15 var(--display); letter-spacing: -0.02em; margin-bottom: 0.35rem; }
 .q-spot { color: var(--ink-2); font-size: 0.9rem; margin-bottom: 0.6rem; }
 .q-lim, .q-peak { font-size: 0.86rem; color: var(--ink-2); margin-bottom: 0.35rem; }
@@ -353,6 +361,7 @@ select {
 
 /* ---------- strip 16 giorni ---------- */
 .strip {
+  min-width: 0;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(46px, 1fr);
@@ -980,4 +989,87 @@ select {
   h2 { font-size: 1.22rem; }
   .hero { padding: 1.15rem; gap: 1.1rem; }
   .strip { grid-auto-columns: minmax(42px, 1fr); }
+}
+
+/* ---------- griglia a tessere quadrate ---------- */
+.sp-griglia {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.7rem;
+}
+.sp-t {
+  position: relative; aspect-ratio: 1;
+  padding: 0; overflow: hidden; cursor: pointer;
+  border-radius: 14px;
+  /* Il bordo E' l'informazione: 4px perche' a 2 non si legge su una foto. */
+  border: 4px solid var(--line);
+  background: var(--bg-2);
+  box-shadow: var(--sh-1);
+  transition: transform .15s, box-shadow .15s;
+}
+.sp-t:hover, .sp-t:focus-visible { transform: translateY(-2px); box-shadow: var(--sh-2); }
+.sp-t img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sp-t-nome {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 1.4rem 0.5rem 0.45rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / .8));
+  color: #fff; font: 600 0.78rem/1.15 var(--sans); text-align: left;
+}
+.sp-t.c-ottimo     { border-color: #3f7a2e; }
+.sp-t.c-buono      { border-color: #5c7a33; }
+.sp-t.c-condizioni { border-color: #b7791f; }
+.sp-t.c-tossico    { border-color: #c2410c; }
+.sp-t.c-mortale    { border-color: #b3182b; }
+
+.sp-leg { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 0.9rem; align-items: center; }
+.sp-leg span { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; color: var(--ink-2); }
+.sp-leg i { width: 14px; height: 14px; border-radius: 4px; border: 3px solid; display: inline-block; }
+.sp-leg i.c-ottimo     { border-color: #3f7a2e; }
+.sp-leg i.c-buono      { border-color: #5c7a33; }
+.sp-leg i.c-condizioni { border-color: #b7791f; }
+
+/* ---------- dettaglio specie ---------- */
+.sd {
+  border: 0; padding: 0; background: var(--card); color: var(--ink);
+  border-radius: var(--r-lg);
+  width: min(680px, calc(100vw - 2rem));
+  max-height: min(88dvh, 900px);
+  overflow: auto;
+  box-shadow: var(--sh-2);
+}
+.sd::backdrop { background: rgb(0 0 0 / .6); backdrop-filter: blur(3px); }
+.sd-chiudi {
+  position: sticky; top: 0.6rem; float: right; margin: 0.6rem 0.6rem 0 0;
+  z-index: 2; width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font-size: 0.95rem; cursor: pointer;
+}
+.sd-foto { margin: 0; position: relative; }
+.sd-foto img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.sd-foto figcaption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 0.35rem 0.7rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / .75));
+  color: #e8e2d8; font-size: 0.66rem;
+}
+.sd-foto figcaption a { color: #e8e2d8; }
+.sd-testo { padding: 1rem 1.2rem 1.4rem; }
+.sd-h4 {
+  margin: 1.2rem 0 0.6rem; padding-left: 0.6rem; font-size: 0.95rem;
+  border-left: 4px solid var(--line);
+}
+.sd-h4.r-mortale { border-left-color: #b3182b; }
+.sd-h4.r-grave   { border-left-color: #d97706; }
+.sd-h4.r-lieve   { border-left-color: #b7a53a; }
+.sd-h4.r-nessuna { border-left-color: var(--accent-2); }
+
+@media (max-width: 700px) {
+  .sp-griglia { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.55rem; }
+  .sp-t-nome { font-size: 0.7rem; padding: 1.1rem 0.4rem 0.4rem; }
+  /* A tutto schermo: su un telefono un dialog "centrato" e' solo spazio perso. */
+  .sd {
+    width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh;
+    border-radius: 0; margin: 0;
+  }
+  .sd-foto img { aspect-ratio: 4/3; }
+  .sd-testo { padding: 0.9rem 1rem 3rem; }
 }
