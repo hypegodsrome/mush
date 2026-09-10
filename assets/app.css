@@ -799,3 +799,85 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .gauge-arc { transition: none; }
 }
+
+/* ---------- guida alle specie ---------- */
+.sp-barra {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+  margin: 1.25rem 0;
+}
+.sp-filtri { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.sp-f {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
+  border-radius: 999px; padding: 0.35rem 0.8rem;
+  font: 500 0.82rem var(--sans); cursor: pointer;
+}
+.sp-f.is-on {
+  background: var(--accent); border-color: transparent;
+  color: var(--on-accent); font-weight: 600;
+}
+.sp-cerca { flex: 1; min-width: 12rem; }
+.sp-cerca input {
+  width: 100%; padding: 0.5rem 0.8rem;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 9px;
+  font: 400 0.9rem var(--sans);
+}
+
+.sp-griglia {
+  display: grid; gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+.sp-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: var(--r); padding: 1rem 1.1rem;
+  box-shadow: var(--sh-1);
+}
+/* Il bordo porta il rischio piu' alto fra i sosia: e' la cosa da vedere per
+   prima, prima ancora del nome. */
+.sp-card.r-mortale { border-left-color: #b3182b; }
+.sp-card.r-grave   { border-left-color: #d97706; }
+.sp-card.r-lieve   { border-left-color: #b7a53a; }
+.sp-card.r-nessuna { border-left-color: var(--accent-2); }
+
+.sp-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.sp-r {
+  font-size: 0.66rem; font-weight: 600; padding: 0.15rem 0.5rem;
+  border-radius: 999px; margin-left: auto; white-space: nowrap;
+}
+.sp-r-mortale { background: #b3182b; color: #fff; }
+.sp-r-grave   { background: #d97706; color: #17110a; }
+.sp-r-lieve   { background: #b7a53a; color: #17140a; }
+.sp-r-nessuna { background: var(--accent-2); color: #0f1408; }
+
+.sp-nome { font-size: 1.15rem; margin: 0 0 0.1rem; }
+.sp-sci { display: block; font-size: 0.8rem; color: var(--ink-3); margin-bottom: 0.7rem; }
+
+.sp-dl { margin: 0; display: grid; gap: 0.45rem; }
+.sp-dl dt {
+  font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--ink-3); font-weight: 600;
+}
+.sp-dl dd { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--ink-2); }
+
+.sp-piu {
+  margin-top: 0.85rem; width: 100%;
+  border: 1px solid var(--line); background: var(--bg-2); color: var(--ink);
+  border-radius: var(--r-sm); padding: 0.45rem 0.7rem;
+  font: 600 0.8rem var(--sans); cursor: pointer;
+}
+.sp-piu:hover { border-color: var(--ink-3); }
+.sp-conf { display: none; margin-top: 0.6rem; gap: 0.5rem; }
+.sp-card.is-aperta .sp-conf { display: grid; }
+.sp-c {
+  background: var(--bg-2); border-radius: var(--r-sm);
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--line);
+}
+.sp-c-mortale { border-left-color: #b3182b; }
+.sp-c-grave   { border-left-color: #d97706; }
+.sp-c-lieve   { border-left-color: #b7a53a; }
+.sp-c-nessuna { border-left-color: var(--accent-2); }
+.sp-c b { font-size: 0.86rem; }
+.sp-c .sp-r { margin-left: 0.4rem; }
+.sp-c p { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--ink-2); }

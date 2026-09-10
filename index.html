@@ -100,6 +100,11 @@
     <span class="voce-txt"><b>Mappa</b><small>Boschi, pioggia, crescita</small></span>
     <em class="voce-fr">›</em>
   </button>
+  <button class="voce" data-view="specie" type="button">
+    <i class="voce-ic">&#127812;</i>
+    <span class="voce-txt"><b>Specie</b><small>Cosa si trova, e cosa le somiglia</small></span>
+    <em class="voce-fr">&#8250;</em>
+  </button>
   <button class="voce" data-view="webcam" type="button">
     <i class="voce-ic">📷</i>
     <span class="voce-txt"><b>Webcam</b><small>Livata e dintorni, a richiesta</small></span>
@@ -234,6 +239,37 @@
     </div>
   </div>
   <p id="map-src" class="muted small"></p>
+</section>
+
+<!-- ---------- SPECIE ---------- -->
+<section id="v-specie" class="view" hidden>
+  <span class="eyebrow">Guida</span>
+  <h2>Cosa si trova sui Simbruini</h2>
+  <p class="muted">
+    Le specie che crescono fra Livata, Subiaco e la valle dell&apos;Aniene. Per
+    ognuna: dove cercarla, quando, come si riconosce in mano, e soprattutto
+    <strong>cosa le somiglia</strong>.
+  </p>
+
+  <div class="sp-barra">
+    <div class="sp-filtri" id="sp-filtri"></div>
+    <div class="sp-cerca">
+      <input type="search" id="sp-q" placeholder="Cerca per nome o nome scientifico&hellip;"
+             autocomplete="off" spellcheck="false" aria-label="Cerca una specie">
+    </div>
+  </div>
+
+  <div id="sp-griglia" class="sp-griglia"></div>
+  <p id="sp-vuoto" class="muted small" hidden>Nessuna specie corrisponde alla ricerca.</p>
+
+  <div class="err" style="margin-top:1.5rem">
+    <b>Questa guida non basta per decidere se mangiare un fungo.</b><br>
+    Descrive i caratteri principali, non sostituisce l&apos;esame di un micologo.
+    In Italia gli ispettorati micologici delle ASL controllano i funghi
+    <strong>gratuitamente</strong>: portarci il cesto prima di cucinarlo &egrave;
+    l&apos;unico modo sicuro. Diverse specie mortali somigliano a specie ottime,
+    e i sintomi delle pi&ugrave; pericolose arrivano quando il danno &egrave; gi&agrave; fatto.
+  </div>
 </section>
 
 <!-- ---------- WEBCAM ---------- -->

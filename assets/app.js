@@ -590,6 +590,88 @@ function aggiornaFonteMappa() {
 function disegnaMappa() { if (stato.mappa) disegnaCrescita(); }
 
 // ==========================================================================
+// Vista: specie
+//
+// Il contenuto sta in guida.js. Qui c'e' solo il disegno, il filtro per
+// habitat e la ricerca. Caricato a richiesta: chi non apre la guida non
+// scarica il testo.
+// ==========================================================================
+let specieMontate = false;
+let SP = null;
+
+async function montaSpecie() {
+  if (specieMontate) return;
+  specieMontate = true;
+
+  SP = await import("./guida.js");
+
+  $("#sp-filtri").innerHTML =
+    `<button class="sp-f is-on" data-h="all" type="button">Tutte</button>`
+    + Object.entries(SP.HABITAT)
+        .map(([k, n]) => `<button class="sp-f" data-h="${esc(k)}" type="button">${esc(n)}</button>`)
+        .join("");
+
+  $("#sp-griglia").innerHTML = SP.SPECIE.map(schedaSpecie).join("");
+
+  $$("#sp-filtri .sp-f").forEach((b) => b.addEventListener("click", () => {
+    $$("#sp-filtri .sp-f").forEach((x) => x.classList.toggle("is-on", x === b));
+    filtraSpecie();
+  }));
+  $("#sp-q").addEventListener("input", filtraSpecie);
+
+  $$("#sp-griglia .sp-card").forEach((c) =>
+    $(".sp-piu", c).addEventListener("click", () => c.classList.toggle("is-aperta")));
+}
+
+function schedaSpecie(sp) {
+  const [etichettaHab] = [SP.HABITAT[sp.habitat] || sp.habitat];
+  // Il rischio piu' alto fra le confusioni decide il colore del bordo: e'
+  // l'informazione che deve arrivare per prima, prima ancora del nome.
+  const ordine = ["mortale", "grave", "lieve", "nessuna"];
+  const peggio = ordine.find((g) => sp.confusioni.some((c) => c[1] === g)) || "nessuna";
+
+  const cerca = [sp.nome, sp.sci, etichettaHab].join(" ").toLowerCase();
+
+  return `<article class="sp-card r-${peggio}" data-h="${esc(sp.habitat)}"
+            data-cerca="${esc(cerca)}">
+    <div class="sp-top">
+      <span class="pill">${esc(etichettaHab)}</span>
+      <span class="sp-r sp-r-${peggio}">${esc(SP.GRAVITA[peggio][0])}</span>
+    </div>
+    <h3 class="sp-nome">${esc(sp.nome)}</h3>
+    <em class="sp-sci">${esc(sp.sci)}</em>
+    <dl class="sp-dl">
+      <dt>Stagione</dt><dd>${esc(sp.stagione)}</dd>
+      <dt>Dove</dt><dd>${esc(sp.dove)}</dd>
+      <dt>Come si riconosce</dt><dd>${esc(sp.segni)}</dd>
+      ${sp.nota ? `<dt>Attenzione</dt><dd>${esc(sp.nota)}</dd>` : ""}
+    </dl>
+    <button class="sp-piu" type="button">Sosia e confusioni (${sp.confusioni.length})</button>
+    <div class="sp-conf">
+      ${sp.confusioni.map(([nome, g, testo]) => `
+        <div class="sp-c sp-c-${esc(g)}">
+          <b>${esc(nome)}</b>
+          <span class="sp-r sp-r-${esc(g)}">${esc(SP.GRAVITA[g][1])}</span>
+          <p>${esc(testo)}</p>
+        </div>`).join("")}
+    </div>
+  </article>`;
+}
+
+function filtraSpecie() {
+  const h = $("#sp-filtri .sp-f.is-on").dataset.h;
+  const q = $("#sp-q").value.trim().toLowerCase();
+  let visti = 0;
+  $$("#sp-griglia .sp-card").forEach((c) => {
+    const ok = (h === "all" || c.dataset.h === h)
+            && (!q || c.dataset.cerca.includes(q));
+    c.hidden = !ok;
+    if (ok) visti++;
+  });
+  $("#sp-vuoto").hidden = visti > 0;
+}
+
+// ==========================================================================
 // Vista: webcam
 //
 // Caricate solo a richiesta: nessun setInterval, nessun polling.
@@ -1012,6 +1094,7 @@ function mostraVista(b) {
   // momento del cambio deve essere lo stesso in cui Leaflet ricalcola.
   $("main").classList.toggle("e-mappa", v === "mappa");
 
+  if (v === "specie") montaSpecie();
   if (v === "mappa") avviaMappa();
   if (v === "webcam") montaCams();
   if (v === "meteo") renderMeteo();
