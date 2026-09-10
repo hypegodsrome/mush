@@ -10,6 +10,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
   onAuthStateChanged, setPersistence, browserLocalPersistence,
+  reauthenticateWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { EMAIL_ADMIN, isAdmin, elencoUtenti, bandisci, elimina } from "./registro.js";
 
@@ -158,6 +159,30 @@ function disegna() {
     b.addEventListener("click", () => azione(b.dataset.az, b.dataset.uid)));
 }
 
+/* Riautenticazione recente prima delle azioni distruttive.
+ *
+ * Non posso imporre il secondo fattore da qui: lo decide l'account Google.
+ * Ma posso pretendere un accesso FRESCO, e quello passa da Google - quindi
+ * se sull'account la verifica in due passaggi e' attiva, scatta li'.
+ * Serve anche contro il caso concreto: sessione lasciata aperta su un
+ * computer altrui. La finestra e' corta apposta. */
+const FRESCHEZZA_MS = 5 * 60 * 1000;
+let ultimaRiauth = 0;
+
+async function confermaIdentita() {
+  if (Date.now() - ultimaRiauth < FRESCHEZZA_MS) return true;
+  try {
+    await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider());
+    ultimaRiauth = Date.now();
+    return true;
+  } catch (e) {
+    $("#msg").textContent = e.code === "auth/popup-blocked"
+      ? "Il browser ha bloccato la finestra di conferma."
+      : "Identità non confermata: " + (e.code || e.message);
+    return false;
+  }
+}
+
 async function azione(az, uid) {
   const u = utenti.find((x) => x.uid === uid);
   if (!u) return;
@@ -171,6 +196,9 @@ async function azione(az, uid) {
              + `Attenzione: non è un bando. Al prossimo accesso rientra e viene registrato di nuovo.`,
   };
   if (!confirm(domande[az])) return;
+
+  $("#msg").textContent = "Conferma la tua identità…";
+  if (!await confermaIdentita()) return;
 
   $("#msg").textContent = "Salvataggio…";
   try {

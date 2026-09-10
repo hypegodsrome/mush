@@ -220,16 +220,38 @@ altrove. Quello che si può fare è ridurre la superficie, ed è stato fatto.
 
 | Misura | Dove |
 |---|---|
+| HTTPS obbligatorio, HSTS, redirect da HTTP | GitHub Pages, di serie |
 | CSP con `default-src 'none'`, tutto in allowlist | `<meta>` in `index.html` |
 | Script inline ammesso per **hash**, non `unsafe-inline` | idem |
 | Hash verificato a ogni build, altrimenti fallisce | `verifica_csp()` |
 | SRI sugli script da CDN | `index.html` |
+| **Integrità della catena di fornitura**: a ogni build le risorse CDN vengono riscaricate e il digest confrontato con l'`integrity` dichiarato | `verifica_sri()` |
+| **Riautenticazione fresca** prima di bandire o eliminare | `confermaIdentita()` |
+| Permessi minimi: ognuno tocca solo il proprio documento, solo tre campi, non può sbandirsi | `firestore.rules` |
 | Iframe di terzi in `sandbox`, senza `allow-same-origin` | `schedaCam()` |
 | `referrerpolicy="no-referrer"` su webcam e iframe | idem |
 | Ogni stringa passata all'HTML viene escapata | `esc()` |
 | Nessun segreto nel client (la chiave Windy sta in un Secret) | `build_data.py` |
 | Versioni CDN fissate esatte, mai `@latest` | `index.html` |
+| Aggiornamento automatico delle action | `.github/dependabot.yml` |
 | `noindex, nofollow` e `robots.txt` | `index.html`, `robots.txt` |
+
+### Perché la checklist da CMS non si applica tutta
+
+Buona parte dei consigli di sicurezza che si trovano in giro presuppone un
+server con un CMS, un database e dei plugin. Qui non c'è niente di tutto ciò,
+e le voci vanno tradotte o scartate:
+
+| Voce tipica | Qui |
+|---|---|
+| Certificato SSL/TLS | già attivo, con HSTS e redirect. Nulla da fare |
+| MFA sull'area amministrativa | il secondo fattore lo impone Google, non il sito. Attivalo sull'account; il sito richiede comunque un accesso **fresco** prima delle azioni distruttive |
+| Web Application Firewall | **non installabile.** Non c'è un origin server da proteggere. Servirebbe un CDN davanti al sito (Cloudflare con dominio personalizzato) |
+| Anti-DDoS | nessuna configurazione possibile, ma un sito statico su CDN non ha un backend da esaurire: è la forma più resistente per costruzione |
+| Aggiornare CMS, plugin, PHP | non esistono. Le uniche dipendenze sono Leaflet e l'SDK Firebase, a versione fissa, con integrità verificata a ogni build |
+| Scansione malware e integrità file | l'equivalente qui è git più i controlli su CSP e SRI: qualsiasi modifica è un commit, e un CDN che cambia byte fa fallire la build |
+| Backup del database | il codice è su git in più copie. **Il registro utenti su Firestore non è sottoposto a backup**: se ti importa, servono i backup programmati di Firestore, che richiedono il piano Blaze |
+| Niente utente "admin", limite ai tentativi di accesso | non ci sono password da indovinare: l'identità è Google, e l'amministratore è un indirizzo preciso inchiodato nelle regole lato server |
 
 `style-src` tiene `'unsafe-inline'` perché l'interfaccia scrive attributi
 `style` (larghezze delle barre, colori del punteggio) e gli hash sugli

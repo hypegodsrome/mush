@@ -808,8 +808,47 @@ def verifica_csp():
         print(f"  CSP {pagina}: hash inline verificato ({atteso[:20]}...)")
 
 
+def verifica_sri():
+    """Scarica ogni risorsa da CDN e confronta il digest con l'attributo
+    `integrity` dichiarato nell'HTML.
+
+    A runtime il browser fa gia' questo controllo e rifiuta lo script se non
+    combacia. Farlo anche qui serve a due cose che il browser non copre: si
+    accorge se qualcuno cambia l'indirizzo senza aggiornare l'hash (il sito
+    si romperebbe per tutti, in silenzio), e vede se il CDN inizia a servire
+    byte diversi - cioe' una compromissione della catena di fornitura - prima
+    che se ne accorga un visitatore.
+    """
+    import base64
+    import hashlib
+
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    risorse = re.findall(
+        r'(?:src|href)="(https://[^"]+)"[^>]*?integrity="([^"]+)"', html, re.S)
+    if not risorse:
+        raise AssertionError("nessuna risorsa con integrity in index.html: "
+                             "se ne hai tolte, aggiorna questo controllo")
+
+    for url, dichiarato in risorse:
+        algo, _, atteso = dichiarato.partition("-")
+        if algo not in ("sha256", "sha384", "sha512"):
+            raise AssertionError(f"algoritmo SRI ignoto: {dichiarato}")
+        blob = _get(url, timeout=60)
+        vero = base64.b64encode(hashlib.new(algo, blob).digest()).decode()
+        nome = url.rsplit("/", 1)[-1]
+        if vero != atteso:
+            raise AssertionError(
+                f"INTEGRITA' VIOLATA su {url}\n"
+                f"  dichiarato: {algo}-{atteso}\n"
+                f"  ricevuto:   {algo}-{vero}\n"
+                "  Il CDN sta servendo byte diversi da quelli attesi. Non "
+                "pubblicare finche' non hai capito perche'.")
+        print(f"  SRI {nome}: {len(blob)/1024:.0f} KB, digest confermato")
+
+
 def selftest():
     verifica_csp()
+    verifica_sri()
 
     """Controlli sulla correzione di bias: e' l'unico punto dove i dati
     vengono riscritti, quindi e' l'unico che merita una rete."""

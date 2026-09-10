@@ -1,0 +1,12 @@
+# Le uniche dipendenze con un gestore di pacchetti sono le action del workflow.
+# Il resto (Leaflet, Firebase SDK) arriva da CDN a versione fissa, e Dependabot
+# non lo vede: quelle vanno aggiornate a mano, ricalcolando l'hash SRI.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    labels: ["dipendenze"]
