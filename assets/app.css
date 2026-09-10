@@ -596,7 +596,14 @@ select {
 
 /* ---------- webcam ---------- */
 .cam-actions { display: flex; align-items: center; gap: 0.9rem; margin: 0.9rem 0 1.1rem; }
-.cams { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+/* Tessere come nella sezione Specie: immagine a tutto riquadro, nome
+   sovrimpresso, tocco per aprire a schermo intero. Prima erano schede a
+   piena larghezza con l'intestazione sopra la foto, e sul telefono ne
+   entrava una e mezza per schermata. */
+.cams {
+  display: grid; gap: 0.7rem;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
 .cam {
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--r); overflow: hidden;
@@ -1137,4 +1144,60 @@ select {
   .cz-r { grid-template-columns: 1fr 1.8rem 3.4rem 2.6rem 2.6rem; gap: 0.35rem;
           padding: 0.5rem 0.6rem; }
   .cz-n { font-size: 0.8rem; }
+}
+
+
+/* ---------- webcam a tessere ---------- */
+.cam {
+  position: relative; margin: 0; padding: 0;
+  aspect-ratio: 4 / 3; overflow: hidden; cursor: zoom-in;
+  border-radius: var(--r-sm); border: 1px solid var(--line);
+  background: var(--bg-2); box-shadow: var(--sh-1);
+  transition: transform .15s, box-shadow .15s;
+}
+.cam:hover, .cam:focus-visible { transform: translateY(-2px); box-shadow: var(--sh-2); }
+.cam:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cam .cam-shot {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; aspect-ratio: auto;
+  object-fit: cover; border: 0; display: block;
+}
+.cam.is-video .cam-shot { pointer-events: none; }
+.cam.is-video::after {
+  content: "▶"; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgb(0 0 0 / .55); color: #fff; font-size: 1rem;
+  pointer-events: none;
+}
+.cam .cam-head {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  display: flex; flex-direction: column; gap: 0.1rem;
+  padding: 1.6rem 0.6rem 0.5rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / .82));
+  color: #fff;
+}
+.cam .cam-name { font-size: 0.8rem; font-weight: 600; color: #fff; }
+.cam .cam-sub { font-size: 0.66rem; color: #d8d0c4; }
+.cam .cam-msg {
+  position: absolute; top: 0.45rem; left: 0.45rem; z-index: 1;
+  padding: 0.12rem 0.45rem; border-radius: 999px;
+  background: rgb(0 0 0 / .55); color: #e8e2d8; font-size: 0.62rem;
+}
+.cam .cam-msg:empty { display: none; }
+
+/* Le spente restano piu' piccole e spente anche di colore. */
+.cams-off { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.55rem; }
+.cams-off .cam { aspect-ratio: 1; }
+.cams-off .cam .cam-shot { filter: grayscale(1) brightness(0.6); }
+.cams-off .cam .cam-name { font-size: 0.7rem; }
+.cams-off .cam .cam-sub { font-size: 0.6rem; }
+
+@media (max-width: 700px) {
+  .cams { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.55rem; }
+  .cam { aspect-ratio: 1; }
+  .cam .cam-name { font-size: 0.72rem; }
+  .cam .cam-sub { display: none; }
+  .cams-off { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }

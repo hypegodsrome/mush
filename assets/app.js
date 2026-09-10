@@ -394,6 +394,12 @@ function renderClassifica() {
 
 const CORINE = "https://image.discomap.eea.europa.eu/arcgis/services/Corine/CLC2018_WM/MapServer/WMSServer";
 
+/* Sentieri segnati: tessere di Waymarked Trails, che rende i percorsi
+   escursionistici di OpenStreetMap. Sui Simbruini ci sono 115 percorsi
+   mappati con sigla CAI e nome. Trasparente, quindi si sovrappone a
+   qualunque sfondo. */
+const SENTIERI = "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png";
+
 const BASI = {
   osm: ["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         "&copy; OpenStreetMap", 19],
@@ -421,6 +427,11 @@ function avviaMappa() {
   // ingrandisce l'ultimo livello buono - sgranato, ma e' una mappa di
   // copertura del suolo, non una foto: la sgranatura e' onesta, visto che
   // il dato originale ha celle da 100 m.
+  stato.strati.sentieri = L.tileLayer(SENTIERI, {
+    maxZoom: 18, opacity: 0.85,
+    attribution: '<a href="https://hiking.waymarkedtrails.org">Waymarked Trails</a>',
+  });
+
   stato.strati.boschi = L.tileLayer.wms(CORINE, {
     layers: "12", format: "image/png", transparent: true, version: "1.3.0",
     opacity: 0.7, maxNativeZoom: 11, maxZoom: 19,
@@ -502,9 +513,15 @@ async function accendiStrato(nome, acceso) {
       const r = await fetch("https://api.rainviewer.com/public/weather-maps.json");
       const d = await r.json();
       const f = d.radar.past[d.radar.past.length - 1];
+      // Il radar gratuito di RainViewer copre fino allo zoom 7: da 8 in su
+      // restituisce sempre la stessa immagine con scritto "Zoom Level Not
+      // Supported", che finiva dritta sulla mappa. Con maxNativeZoom Leaflet
+      // ingrandisce l'ultimo livello con dati veri: sgranato, ma la domanda
+      // a cui deve rispondere - sta piovendo sulla zona? - regge lo stesso.
       stato.strati.pioggia = L.tileLayer(
         `${d.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`,
-        { opacity: 0.65, attribution: "Radar &copy; RainViewer" });
+        { opacity: 0.65, maxNativeZoom: 7, maxZoom: 19,
+          attribution: "Radar &copy; RainViewer" });
       $("#radar-ora").textContent = new Date(f.time * 1000)
         .toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
     } catch (e) {
@@ -512,11 +529,28 @@ async function accendiStrato(nome, acceso) {
       return;
     }
   }
+  if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
+
   const l = stato.strati[nome];
   if (!l) return;
   if (acceso) { l.addTo(m); if (l.setZIndex) l.setZIndex(nome === "boschi" ? 1 : 2); }
   else m.removeLayer(l);
   aggiornaFonteMappa();
+}
+
+/* Griglia nazionale di Meteo Funghi: 820 celle da 0,2 gradi su tutta Italia.
+   Si costruisce solo alla prima accensione, perche' ottocento cerchi disegnati
+   sempre rallentano la mappa anche quando lo strato e' spento. */
+function disegnaMF() {
+  const mf = stato.dati.mf;
+  if (!mf || !mf.punti) return;
+  stato.strati.mf = L.layerGroup(mf.punti.map((p) => L.circleMarker([p.lat, p.lon], {
+    radius: 7, weight: 0,
+    fillOpacity: p.q < 1 ? 0.35 : 0.75,
+    fillColor: coloreQ(p.q),
+  }).bindPopup(`<b>Meteo Funghi</b><br>`
+    + `<span class="pop-q" style="color:${coloreQ(p.q)}">`
+    + `${p.q.toFixed(1).replace(".", ",")}</span> su 10`)));
 }
 
 function disegnaCrescita() {
@@ -766,18 +800,22 @@ function schedaCam(c, piccola) {
   // niente accesso al nostro contesto (`allow-same-origin` assente apposta).
   // referrerpolicy: le webcam non hanno bisogno di sapere da quale pagina
   // arrivi la richiesta.
+  // L'iframe non riceve i tocchi: se li prendesse lui, la tessera non si
+  // aprirebbe mai. Il video si comanda a schermo intero.
   const media = c.iframe
     ? `<iframe class="cam-shot" loading="lazy" allowfullscreen title="${esc(c.nome)}"
-         referrerpolicy="no-referrer"
+         referrerpolicy="no-referrer" tabindex="-1"
          sandbox="allow-scripts allow-presentation"></iframe>`
     : `<img class="cam-shot" alt="${esc(c.nome)}" loading="lazy" decoding="async"
          referrerpolicy="no-referrer">`;
-  return `<figure class="cam${piccola ? " is-off" : ""}" data-id="${esc(c.id)}">
+  return `<figure class="cam${piccola ? " is-off" : ""}${c.iframe ? " is-video" : ""}"
+            data-id="${esc(c.id)}" tabindex="0" role="button"
+            aria-label="${esc(c.nome)} — apri a schermo intero">
+      ${media}
       <figcaption class="cam-head">
         <span class="cam-name">${esc(c.nome)}</span>
         <span class="cam-sub">${esc(piccola ? (c.errore || "non attiva") : c.dove)}</span>
       </figcaption>
-      ${media}
       <div class="cam-msg"></div>
     </figure>`;
 }
@@ -799,7 +837,12 @@ function montaCams() {
   $("#cams-off-n").textContent = spente.length;
 
   $("#btn-cams").addEventListener("click", aggiornaCams);
-  $$("#v-webcam .cam").forEach((fig) => fig.addEventListener("click", () => apriGrande(fig)));
+  $$("#v-webcam .cam").forEach((fig) => {
+    fig.addEventListener("click", () => apriGrande(fig));
+    fig.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); apriGrande(fig); }
+    });
+  });
   aggiornaCams();
 }
 
