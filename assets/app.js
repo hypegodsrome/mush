@@ -408,6 +408,7 @@ function avviaMappa() {
     .setView([41.95, 13.12], 11);
   L.control.zoom({ position: "bottomright" }).addTo(stato.mappa);
   L.control.scale({ imperial: false, position: "bottomleft" }).addTo(stato.mappa);
+  aggiungiControlli();
 
   cambiaBase("osm");
 
@@ -442,6 +443,39 @@ function avviaMappa() {
   disegnaCrescita();
   accendiStrato("crescita", true);
   aggiornaFonteMappa();
+}
+
+/* Solo pulsanti che fanno qualcosa: un cluster pieno di icone inerti e' peggio
+   di un cluster corto. */
+function aggiungiControlli() {
+  const Cluster = L.Control.extend({
+    options: { position: "bottomright" },
+    onAdd() {
+      const d = L.DomUtil.create("div", "mappa-cluster");
+      const bottoni = [
+        ["⌖", "Dove sono", () => stato.mappa.locate({ setView: true, maxZoom: 14 })],
+        ["⛶", "Schermo intero", () => {
+          const el = $(".mappa-scena");
+          if (document.fullscreenElement) document.exitFullscreen();
+          else el.requestFullscreen?.().catch(() => {});
+          setTimeout(() => stato.mappa.invalidateSize(), 250);
+        }],
+        ["⟲", "Torna sulle zone", () => stato.mappa.setView([41.95, 13.12], 11)],
+      ];
+      for (const [ic, titolo, fn] of bottoni) {
+        const b = L.DomUtil.create("button", "", d);
+        b.type = "button"; b.textContent = ic;
+        b.title = titolo; b.setAttribute("aria-label", titolo);
+        L.DomEvent.on(b, "click", L.DomEvent.stop).on(b, "click", fn);
+      }
+      L.DomEvent.disableClickPropagation(d);
+      return d;
+    },
+  });
+  new Cluster().addTo(stato.mappa);
+
+  stato.mappa.on("locationerror", () =>
+    $("#map-src").textContent = "Posizione non disponibile: permesso negato o GPS assente.");
 }
 
 function cambiaBase(quale) {
@@ -934,11 +968,20 @@ function renderFooter() {
 // Tab
 // ==========================================================================
 function attivaTab() {
-  $$(".tab").forEach((b) => b.addEventListener("click", () => {
-    $$(".tab").forEach((x) => x.classList.toggle("is-on", x === b));
-    $$(".view").forEach((v) => { v.hidden = v.id !== "v-" + b.dataset.view; });
-    if (b.dataset.view === "mappa") avviaMappa();
-    if (b.dataset.view === "webcam") montaCams();
-    if (b.dataset.view === "meteo") renderMeteo();
-  }));
+  $$(".voce[data-view]").forEach((b) => b.addEventListener("click", () => mostraVista(b)));
+}
+
+function mostraVista(b) {
+  const v = b.dataset.view;
+  $$(".voce[data-view]").forEach((x) => x.classList.toggle("is-on", x === b));
+  $$(".view").forEach((s) => { s.hidden = s.id !== "v-" + v; });
+
+  // La mappa vuole tutta la finestra: main perde larghezza massima e margini
+  // solo mentre e' in vista. Con una classe invece che con :has() perche' il
+  // momento del cambio deve essere lo stesso in cui Leaflet ricalcola.
+  $("main").classList.toggle("e-mappa", v === "mappa");
+
+  if (v === "mappa") avviaMappa();
+  if (v === "webcam") montaCams();
+  if (v === "meteo") renderMeteo();
 }

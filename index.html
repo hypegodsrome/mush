@@ -83,22 +83,51 @@
 <!-- ==================== APP ==================== -->
 <div id="app" hidden>
 
-<header class="top">
-  <div class="brand"><span class="brand-mark">🍄</span> Mush</div>
-  <div class="top-right">
-    <span id="user" class="user"></span>
-    <a id="link-adm" class="btn-ghost" href="adm/" hidden>Admin</a>
-    <button class="btn-ghost btn-icona" data-tema-btn type="button"></button>
-    <button id="btn-logout" class="btn-ghost" type="button">Esci</button>
-  </div>
-</header>
+<div class="guscio">
 
-<nav class="tabs" role="tablist">
-  <button class="tab is-on" data-view="previsione" role="tab">Previsione</button>
-  <button class="tab" data-view="mappa" role="tab">Mappa</button>
-  <button class="tab" data-view="webcam" role="tab">Webcam</button>
-  <button class="tab" data-view="meteo" role="tab">Meteo</button>
-  <button class="tab" data-view="modello" role="tab">Modello</button>
+<nav class="rail" id="rail">
+  <div class="rail-brand"><span class="brand-mark">🍄</span> Mush</div>
+
+  <span class="rail-et">Menù di navigazione</span>
+
+  <button class="voce is-on" data-view="previsione" type="button">
+    <i class="voce-ic">◎</i>
+    <span class="voce-txt"><b>Previsione</b><small>Punteggio per zona e specie</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="mappa" type="button">
+    <i class="voce-ic">🗺</i>
+    <span class="voce-txt"><b>Mappa</b><small>Boschi, pioggia, crescita</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="webcam" type="button">
+    <i class="voce-ic">📷</i>
+    <span class="voce-txt"><b>Webcam</b><small>Livata e dintorni, a richiesta</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="meteo" type="button">
+    <i class="voce-ic">🌡</i>
+    <span class="voce-txt"><b>Meteo</b><small>Stazione e statistiche per zona</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="modello" type="button">
+    <i class="voce-ic">📖</i>
+    <span class="voce-txt"><b>Modello</b><small>Come funziona, e cosa non sa</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+
+  <a class="voce voce-adm" id="link-adm" href="adm/" hidden>
+    <i class="voce-ic">🔒</i>
+    <span class="voce-txt"><b>Amministrazione</b><small>Registro accessi</small></span>
+    <em class="voce-fr">›</em>
+  </a>
+
+  <div class="rail-piede">
+    <span id="user" class="user"></span>
+    <button class="btn-ghost btn-icona" data-tema-btn type="button"></button>
+    <button id="btn-logout" class="btn-ghost btn-icona" type="button"
+            title="Esci" aria-label="Esci">⏻</button>
+  </div>
 </nav>
 
 <main>
@@ -332,6 +361,7 @@
 </section>
 
 </main>
+</div>
 
 <footer class="foot">
   <span id="foot-meta"></span>

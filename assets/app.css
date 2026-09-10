@@ -181,60 +181,99 @@ a { color: var(--accent); }
 }
 .btn-google:hover { background: #f1f1f1; }
 
-/* ---------- chrome ---------- */
-.top {
-  position: sticky; top: 0; z-index: 500;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem;
-  padding: 0.7rem 1rem;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-}
-.brand { font: 600 1.15rem var(--display); letter-spacing: -0.02em; }
-.brand-mark { margin-right: 0.25rem; }
-.top-right { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
-.user {
-  color: var(--ink-2); font-size: 0.82rem;
-  max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+/* ---------- guscio: rail a sinistra, contenuto a destra ---------- */
+.guscio {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 100dvh;
 }
 
-.btn, .btn-ghost {
-  border: 1px solid var(--line);
+.rail {
+  position: sticky; top: 0; align-self: start;
+  height: 100dvh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  padding: 1.1rem 0.85rem;
   background: var(--card);
-  color: var(--ink);
-  border-radius: 9px;
-  padding: 0.45rem 0.8rem;
-  font: 500 0.84rem var(--sans);
-  cursor: pointer;
+  border-right: 1px solid var(--line);
 }
-.btn:hover, .btn-ghost:hover { border-color: var(--ink-3); }
-.btn { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; }
-.btn:hover { background: color-mix(in srgb, var(--accent) 85%, var(--ink)); }
-.btn-icona { padding: 0.4rem 0.55rem; font-size: 0.95rem; line-height: 1; }
-.gate-tema { margin-top: 1.25rem; }
+.rail-brand {
+  font: 600 1.35rem var(--display); letter-spacing: -0.02em;
+  padding: 0 0.5rem 1.1rem;
+}
+.rail-et {
+  font: 600 0.64rem/1 var(--sans); letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ink-3);
+  padding: 0 0.5rem 0.6rem;
+}
 
-.tabs {
-  display: flex; gap: 0.4rem;
-  padding: 0.7rem 1rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  border-bottom: 1px solid var(--line);
+/* Voce di navigazione: icona, titolo, sottotitolo, freccia. Il sottotitolo
+   dice cosa c'e' dentro, cosi' il menu si legge senza doverlo esplorare. */
+.voce {
+  display: grid; grid-template-columns: 34px 1fr auto;
+  align-items: center; gap: 0.6rem;
+  width: 100%; text-align: left;
+  padding: 0.62rem 0.6rem;
+  border: 1px solid transparent; border-radius: var(--r-sm);
+  background: transparent; color: inherit; cursor: pointer;
+  font: inherit; text-decoration: none;
+  transition: background .15s, border-color .15s;
 }
-.tabs::-webkit-scrollbar { display: none; }
-.tab {
-  flex: 0 0 auto;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink-2);
-  border-radius: 999px;
-  padding: 0.4rem 0.9rem;
-  font: 500 0.85rem var(--sans);
-  cursor: pointer;
+.voce:hover { background: var(--bg-2); }
+.voce.is-on {
+  background: color-mix(in srgb, var(--accent-2) 14%, var(--card));
+  border-color: color-mix(in srgb, var(--accent-2) 35%, transparent);
 }
-.tab.is-on { background: var(--accent); border-color: transparent; color: var(--on-accent); font-weight: 600; }
+.voce-ic {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: grid; place-items: center; font-style: normal; font-size: 1rem;
+  background: var(--bg-2);
+}
+.voce.is-on .voce-ic { background: color-mix(in srgb, var(--accent-2) 26%, var(--card)); }
+.voce-txt { min-width: 0; }
+.voce-txt b { display: block; font-size: 0.9rem; font-weight: 600; }
+.voce.is-on .voce-txt b { color: var(--accent-2); }
+.voce-txt small {
+  display: block; font-size: 0.72rem; color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.voce-fr { font-style: normal; color: var(--ink-3); font-size: 1.1rem; }
 
-main { max-width: 900px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.rail-piede {
+  margin-top: auto; padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.rail-piede .user { flex: 1; max-width: none; font-size: 0.76rem; }
+
+/* Sotto i 900px il rail diventa una barra in basso, sole icone. */
+@media (max-width: 900px) {
+  .guscio { grid-template-columns: 1fr; }
+  .rail {
+    position: fixed; bottom: 0; left: 0; right: 0; top: auto;
+    height: auto; z-index: 600;
+    flex-direction: row; gap: 0.2rem;
+    padding: 0.4rem 0.5rem;
+    border-right: 0; border-top: 1px solid var(--line);
+    overflow-x: auto; scrollbar-width: none;
+    background: color-mix(in srgb, var(--card) 95%, transparent);
+    backdrop-filter: blur(12px);
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail-brand, .rail-et, .voce-txt small, .voce-fr { display: none; }
+  .voce {
+    grid-template-columns: auto; justify-items: center;
+    gap: 0.15rem; padding: 0.4rem 0.55rem; width: auto;
+  }
+  .voce-txt b { font-size: 0.66rem; }
+  .rail-piede {
+    margin: 0; padding: 0 0 0 0.4rem; border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+  .rail-piede .user { display: none; }
+  body { padding-bottom: 4.2rem; }
+}
+
+main { max-width: 940px; margin: 0 auto; padding: 1.6rem 1.25rem 3rem; width: 100%; }
 
 .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
 .controls label {
@@ -373,12 +412,14 @@ select {
    La mappa esce dalla colonna di testo e occupa tutta la larghezza: e' il
    contenuto principale di questa vista, non un'illustrazione dentro un
    articolo. Il margine negativo annulla il padding di `main`. */
+.e-mappa { max-width: none; padding: 0; }
 .mappa-scena {
   position: relative;
-  margin: -0.25rem calc(50% - 50vw) 0;
-  width: 100vw;
-  height: clamp(420px, calc(100dvh - 190px), 900px);
+  width: 100%;
+  height: 100dvh;
 }
+@media (max-width: 900px) { .mappa-scena { height: calc(100dvh - 4.2rem); } }
+
 #map { position: absolute; inset: 0; height: 100%; border-radius: 0; }
 
 /* Pannello degli strati, sopra la mappa. */
@@ -454,6 +495,37 @@ select {
 .sw:checked { background: var(--accent-2); }
 .sw:checked::after { transform: translateX(17px); }
 .sw:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Cluster di controlli: una pillola orizzontale, come i comandi zoom. */
+.mappa-cluster {
+  display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--sh-1);
+}
+.mappa-cluster button {
+  width: 32px; height: 32px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--ink);
+  font-size: 1rem; line-height: 1; cursor: pointer;
+}
+.mappa-cluster button:hover { background: var(--bg-2); }
+
+.leaflet-control-zoom {
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important; overflow: hidden;
+  box-shadow: var(--sh-1) !important;
+}
+.leaflet-control-zoom a {
+  background: color-mix(in srgb, var(--card) 94%, transparent) !important;
+  color: var(--ink) !important; border-color: var(--line) !important;
+}
+.leaflet-control-zoom a:hover { background: var(--bg-2) !important; }
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--card) 82%, transparent) !important;
+  color: var(--ink-3) !important;
+}
+.leaflet-control-attribution a { color: var(--ink-2) !important; }
 
 .mappa-legenda {
   position: absolute; left: 0.75rem; bottom: 2.2rem; z-index: 410;
@@ -674,7 +746,7 @@ select {
 .disclaimer li { margin-bottom: 0.45rem; }
 
 .foot {
-  max-width: 900px; margin: 0 auto; padding: 1.25rem 1rem 2rem;
+  max-width: 940px; margin: 0 auto; padding: 1.25rem 1rem 2rem;
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   border-top: 1px solid var(--line);
   color: var(--ink-3); font-size: 0.76rem;
