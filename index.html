@@ -30,7 +30,7 @@
   style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
   img-src 'self' data: https:;
   font-src 'self';
-  connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firestore.googleapis.com;
+  connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firestore.googleapis.com https://api.rainviewer.com;
   frame-src https://g0.ipcamlive.com https://ecosite-34d60.firebaseapp.com https://apis.google.com https://accounts.google.com;
   form-action 'none';
   base-uri 'self';
@@ -147,19 +147,72 @@
 
 <!-- ---------- MAPPA ---------- -->
 <section id="v-mappa" class="view" hidden>
-  <div class="controls">
-    <label>Strato
-      <select id="sel-layer">
-        <option value="mush">Mush — modello a 6 fattori (Simbruini)</option>
-        <option value="mf">Meteo Funghi — griglia nazionale</option>
-      </select>
-    </label>
-  </div>
-  <div id="map"></div>
-  <div class="legend">
-    <span class="legend-label">Crescita</span>
-    <div class="legend-bar"></div>
-    <div class="legend-ticks"><span>Irrilevante</span><span>Appena favorevole</span><span>Molto favorevole</span></div>
+  <div class="mappa-scena">
+    <div id="map"></div>
+
+    <button id="pannello-tog" class="pannello-tog" type="button"
+            aria-label="Mostra o nascondi gli strati" title="Strati">≡</button>
+
+    <aside id="pannello" class="pannello">
+      <div class="strato">
+        <label class="strato-cap">
+          <span class="strato-nome"><i>🌳</i> Boschi</span>
+          <input type="checkbox" class="sw" data-strato="boschi">
+        </label>
+        <div class="strato-corpo">
+          <span class="strato-et">Copertura del suolo</span>
+          <div class="chip is-on">Corine Land Cover 2018</div>
+          <label class="opac">Opacità
+            <input type="range" id="op-boschi" min="20" max="100" value="70">
+          </label>
+        </div>
+      </div>
+
+      <div class="strato">
+        <label class="strato-cap">
+          <span class="strato-nome"><i>🌧</i> Pioggia</span>
+          <input type="checkbox" class="sw" data-strato="pioggia">
+        </label>
+        <div class="strato-corpo">
+          <span class="strato-et">Radar, ultimo passaggio</span>
+          <div id="radar-ora" class="chip">—</div>
+        </div>
+      </div>
+
+      <div class="strato">
+        <label class="strato-cap">
+          <span class="strato-nome"><i>🍄</i> Crescita</span>
+          <input type="checkbox" class="sw" data-strato="crescita" checked>
+        </label>
+        <div class="strato-corpo">
+          <span class="strato-et">Modello a otto fattori, le tue zone</span>
+        </div>
+      </div>
+
+      <div class="strato">
+        <label class="strato-cap">
+          <span class="strato-nome"><i>🗺</i> Meteo Funghi</span>
+          <input type="checkbox" class="sw" data-strato="mf">
+        </label>
+        <div class="strato-corpo">
+          <span class="strato-et">Griglia nazionale, celle da 0,2°</span>
+        </div>
+      </div>
+
+      <div class="strato">
+        <span class="strato-et" style="padding:0 .9rem">Sfondo</span>
+        <div class="basi">
+          <button class="chip is-on" data-base="osm" type="button">Stradale</button>
+          <button class="chip" data-base="topo" type="button">Rilievo</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="mappa-legenda">
+      <span class="legend-label">Crescita</span>
+      <div class="legend-bar"></div>
+      <div class="legend-ticks"><span>Irrilevante</span><span>Appena favorevole</span><span>Molto favorevole</span></div>
+    </div>
   </div>
   <p id="map-src" class="muted small"></p>
 </section>

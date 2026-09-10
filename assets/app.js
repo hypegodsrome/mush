@@ -19,7 +19,8 @@ const NOMI_FATTORI = {
   riserva:     ["Riserva", "pioggia accumulata in 60 giorni"],
 };
 
-const stato = { dati: null, spot: null, specie: "porcino", mappa: null, strati: {} };
+const stato = { dati: null, spot: null, specie: "porcino",
+                mappa: null, base: null, strati: {} };
 
 // ==========================================================================
 // Utilita'
@@ -161,13 +162,14 @@ if (!configurato && inLocale) {
     if (!u) return mostraGate();
 
     const { registraAccesso, isAdmin } = await import("./registro.js");
-    const stato = await registraAccesso(fbApp, u);
+    // Non chiamarlo `stato`: coprirebbe lo stato globale del modulo.
+    const esito = await registraAccesso(fbApp, u);
 
-    if (stato.bandito) {
+    if (esito.bandito) {
       await signOut(auth);
-      return mostraGate("Questo account non ha piu' accesso al sito.");
+      return mostraGate("Questo account non ha più accesso al sito.");
     }
-    apriApp(u, { admin: isAdmin(u), registro: !stato.errore });
+    apriApp(u, { admin: isAdmin(u), registro: !esito.errore });
   });
 
   // I due inciampi del primo deploy. Entrambi si risolvono in console, ma i
@@ -383,42 +385,111 @@ function renderClassifica() {
 
 // ==========================================================================
 // Vista: mappa
+//
+// Gli strati vengono da sorgenti aperte, non dai server di qualcun altro:
+//   Boschi   Corine Land Cover 2018 (EEA), WMS pubblico
+//   Pioggia  radar RainViewer, libero e senza chiave
+//   Crescita e Meteo Funghi sono dati nostri, gia' in data/
 // ==========================================================================
+
+const CORINE = "https://image.discomap.eea.europa.eu/arcgis/services/Corine/CLC2018_WM/MapServer/WMSServer";
+
+const BASI = {
+  osm: ["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "&copy; OpenStreetMap", 19],
+  topo: ["https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+         "&copy; OpenTopoMap (CC-BY-SA)", 17],
+};
+
 function avviaMappa() {
-  if (stato.mappa) { stato.mappa.invalidateSize(); return; }
-  stato.mappa = L.map("map", { scrollWheelZoom: false })
-    .setView([stato.spot.lat, stato.spot.lon], 10);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 17, attribution: "&copy; OpenStreetMap",
-  }).addTo(stato.mappa);
-  $("#sel-layer").addEventListener("change", disegnaMappa);
-  disegnaMappa();
+  if (stato.mappa) { setTimeout(() => stato.mappa.invalidateSize(), 60); return; }
+
+  stato.mappa = L.map("map", { scrollWheelZoom: true, zoomControl: false })
+    .setView([41.95, 13.12], 11);
+  L.control.zoom({ position: "bottomright" }).addTo(stato.mappa);
+  L.control.scale({ imperial: false, position: "bottomleft" }).addTo(stato.mappa);
+
+  cambiaBase("osm");
+
+  // Boschi: il WMS non manda header CORS, ma per un tile layer non servono -
+  // sono immagini, non fetch.
+  //
+  // maxNativeZoom non e' un dettaglio: oltre lo zoom 11 il servizio EEA
+  // smette di disegnare e restituisce una tessera con scritto "Zoom Level
+  // Not Supported", che finiva dritta sulla mappa. Cosi' invece Leaflet
+  // ingrandisce l'ultimo livello buono - sgranato, ma e' una mappa di
+  // copertura del suolo, non una foto: la sgranatura e' onesta, visto che
+  // il dato originale ha celle da 100 m.
+  stato.strati.boschi = L.tileLayer.wms(CORINE, {
+    layers: "12", format: "image/png", transparent: true, version: "1.3.0",
+    opacity: 0.7, maxNativeZoom: 11, maxZoom: 19,
+    attribution: "Corine Land Cover 2018 &copy; EEA",
+  });
+
+  $$("#pannello .sw").forEach((sw) => sw.addEventListener("change", () => {
+    accendiStrato(sw.dataset.strato, sw.checked);
+  }));
+  $("#op-boschi").addEventListener("input", (e) => {
+    stato.strati.boschi.setOpacity(e.target.value / 100);
+  });
+  $$("#pannello .basi .chip").forEach((b) => b.addEventListener("click", () => {
+    $$("#pannello .basi .chip").forEach((x) => x.classList.toggle("is-on", x === b));
+    cambiaBase(b.dataset.base);
+  }));
+  $("#pannello-tog").addEventListener("click", () =>
+    $("#pannello").classList.toggle("is-chiuso"));
+
+  disegnaCrescita();
+  accendiStrato("crescita", true);
+  aggiornaFonteMappa();
 }
 
-function disegnaMappa() {
-  const m = stato.mappa, quale = $("#sel-layer").value;
-  Object.values(stato.strati).forEach((l) => m.removeLayer(l));
-  stato.strati = {};
+function cambiaBase(quale) {
+  const [url, attr, maxZoom] = BASI[quale];
+  if (stato.base) stato.mappa.removeLayer(stato.base);
+  stato.base = L.tileLayer(url, { maxZoom, attribution: attr }).addTo(stato.mappa);
+  stato.base.setZIndex(0);
+}
 
-  if (quale === "mf") {
-    const mf = stato.dati.mf;
-    if (!mf) { $("#map-src").textContent = "Griglia Meteo Funghi non disponibile."; return; }
-    const g = L.layerGroup(mf.punti.map((p) => L.circleMarker([p.lat, p.lon], {
-      radius: 7, weight: 0, fillOpacity: p.q < 1 ? 0.35 : 0.75, fillColor: coloreQ(p.q),
-    }).bindPopup(`<b>Meteo Funghi</b><br><span class="pop-q" style="color:${coloreQ(p.q)}">`
-      + `${p.q.toFixed(1).replace(".", ",")}</span> su 10`))).addTo(m);
-    stato.strati.mf = g;
-    m.setView([42.2, 12.6], 6);
-    $("#map-src").innerHTML = `Griglia di ${mf.punti.length} celle da 0,2° · aggiornata `
-      + `${esc(mf.aggiornamento || "n/d")} · fonte <a href="${esc(mf.url)}" rel="noopener">meteofunghi.fungocenter.it</a>.`;
-    return;
+async function accendiStrato(nome, acceso) {
+  const m = stato.mappa;
+  if (nome === "pioggia" && acceso && !stato.strati.pioggia) {
+    try {
+      const r = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+      const d = await r.json();
+      const f = d.radar.past[d.radar.past.length - 1];
+      stato.strati.pioggia = L.tileLayer(
+        `${d.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`,
+        { opacity: 0.65, attribution: "Radar &copy; RainViewer" });
+      $("#radar-ora").textContent = new Date(f.time * 1000)
+        .toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      $("#radar-ora").textContent = "non disponibile";
+      return;
+    }
   }
+  if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
 
-  const g = L.layerGroup(stato.dati.spots.map((s) => {
+  const l = stato.strati[nome];
+  if (!l) return;
+  if (acceso) { l.addTo(m); if (l.setZIndex) l.setZIndex(nome === "boschi" ? 1 : 2); }
+  else m.removeLayer(l);
+  aggiornaFonteMappa();
+}
+
+function disegnaMF() {
+  const mf = stato.dati.mf;
+  if (!mf) return;
+  stato.strati.mf = L.layerGroup(mf.punti.map((p) => L.circleMarker([p.lat, p.lon], {
+    radius: 7, weight: 0, fillOpacity: p.q < 1 ? 0.35 : 0.75, fillColor: coloreQ(p.q),
+  }).bindPopup(`<b>Meteo Funghi</b><br><span class="pop-q" style="color:${coloreQ(p.q)}">`
+    + `${p.q.toFixed(1).replace(".", ",")}</span> su 10`)));
+}
+
+function disegnaCrescita() {
+  if (stato.strati.crescita) stato.mappa.removeLayer(stato.strati.crescita);
+  const marcatori = stato.dati.spots.map((s) => {
     const o = s.specie[stato.specie].oggi, q = o?.q ?? 0;
-    // Il bordo lo decide il CSS: Leaflet scriverebbe `stroke` come attributo
-    // di presentazione, dove le variabili CSS non si risolvono. Una regola su
-    // classe ha priorita' piu' alta dell'attributo, quindi vince e segue il tema.
     const mk = L.circleMarker([s.lat, s.lon], {
       radius: 9 + q, weight: s.id === stato.spot.id ? 3 : 1,
       className: s.id === stato.spot.id ? "mk mk-sel" : "mk",
@@ -427,23 +498,31 @@ function disegnaMappa() {
       <span class="pop-q" style="color:${coloreQ(q)}">${q.toFixed(1).replace(".", ",")}</span> su 10
       — ${esc(o?.etichetta || "")}`);
     mk.on("click", () => {
-      stato.spot = s; $("#sel-spot").value = s.id; renderPrevisione(); disegnaMappa();
+      stato.spot = s; $("#sel-spot").value = s.id; renderPrevisione(); disegnaCrescita();
     });
     return mk;
-  })).addTo(m);
+  });
 
   const st = stato.dati.stazione;
-  if (st) {
-    stato.strati.st = L.marker([st.lat, st.lon]).addTo(m)
-      .bindPopup(`<b>${esc(st.nome)}</b><br>Stazione al suolo · ${st.quota} m<br>
-        ${st.temp ?? "?"} °C · ${st.umidita ?? "?"}% · pioggia mese ${st.pioggia_mese ?? "?"} mm`);
-  }
-  stato.strati.spots = g;
-  m.setView([41.95, 13.15], 10);
-  $("#map-src").textContent =
-    `Otto zone dei Monti Simbruini, punteggio del modello per ${stato.specie}. `
-    + `Il marcatore è la stazione di Monte Livata.`;
+  if (st) marcatori.push(L.marker([st.lat, st.lon]).bindPopup(
+    `<b>${esc(st.nome)}</b><br>Stazione al suolo · ${st.quota} m<br>
+     ${st.temp ?? "?"} °C · ${st.umidita ?? "?"}% · pioggia mese ${st.pioggia_mese ?? "?"} mm`));
+
+  stato.strati.crescita = L.layerGroup(marcatori);
+  if ($('#pannello .sw[data-strato="crescita"]').checked)
+    stato.strati.crescita.addTo(stato.mappa);
 }
+
+function aggiornaFonteMappa() {
+  const on = [...$$("#pannello .sw")].filter((s) => s.checked)
+    .map((s) => s.closest(".strato").querySelector(".strato-nome").textContent.trim());
+  $("#map-src").textContent = on.length
+    ? "Strati attivi: " + on.join(" · ")
+    : "Nessuno strato attivo.";
+}
+
+/** Chiamata quando cambia zona o specie: ridisegna solo i nostri marcatori. */
+function disegnaMappa() { if (stato.mappa) disegnaCrescita(); }
 
 // ==========================================================================
 // Vista: webcam
