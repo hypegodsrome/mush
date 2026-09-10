@@ -528,18 +528,47 @@ select {
 .leaflet-control-attribution a { color: var(--ink-2) !important; }
 
 .mappa-legenda {
-  position: absolute; left: 0.75rem; bottom: 2.2rem; z-index: 410;
-  width: min(260px, calc(100vw - 1.5rem));
-  padding: 0.6rem 0.8rem;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
+  position: absolute; left: 0.75rem; bottom: 2.4rem; z-index: 410;
+  width: min(270px, calc(100vw - 1.5rem));
+  padding: 0.55rem 0.7rem;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
   backdrop-filter: blur(12px);
   border: 1px solid var(--line); border-radius: var(--r-sm);
   box-shadow: var(--sh-1);
 }
+.legenda-tog {
+  display: flex; align-items: center; gap: 0.4rem;
+  width: 100%; padding: 0; border: 0; background: none; cursor: pointer;
+  color: var(--ink-3); font: 600 0.66rem var(--sans);
+  letter-spacing: 0.11em; text-transform: uppercase;
+}
+.legenda-tog::after {
+  content: "▾"; margin-left: auto; font-size: 0.8rem;
+  transition: transform .2s;
+}
+.legenda-tog[aria-expanded="false"]::after { transform: rotate(-90deg); }
+.legenda-corpo { display: grid; gap: 0.7rem; margin-top: 0.5rem; }
+.legenda-corpo[hidden] { display: none; }
+.lg-b b { display: block; font-size: 0.78rem; margin-bottom: 0.35rem; }
+.lg-b small { display: block; margin-top: 0.35rem; font-size: 0.66rem; color: var(--ink-3); }
+.lg-barra {
+  height: 9px; border-radius: 5px;
+  background: linear-gradient(90deg, #9ca3af 0%, #9ca3af 22%, #fbbf24 48%, #f97316 72%, #ef4444 100%);
+}
+.lg-estremi {
+  display: flex; justify-content: space-between;
+  font-size: 0.64rem; color: var(--ink-3); margin-top: 0.2rem;
+}
+.lg-voci { display: grid; gap: 0.22rem; }
+.lg-v { display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; color: var(--ink-2); }
+.lg-v i {
+  width: 13px; height: 13px; border-radius: 3px; flex: 0 0 auto;
+  border: 1px solid rgb(0 0 0 / .18);
+}
 
 @media (max-width: 640px) {
   .mappa-scena { height: clamp(380px, calc(100dvh - 230px), 700px); }
-  .mappa-legenda { display: none; }
+  .mappa-legenda { left: 0.5rem; right: 0.5rem; width: auto; bottom: 2.4rem; }
 }
 .leaflet-container { background: var(--bg-2); font: inherit; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
@@ -646,9 +675,12 @@ select {
 .ch-lab-rain  { fill: var(--chart-rain); }
 .ch-lab-temp  { fill: var(--chart-temp); }
 
-/* Marcatori della mappa: vedi il commento in disegnaMappa(). */
-.mk     { stroke: var(--bg); }
-.mk-sel { stroke: var(--ink); }
+/* Marcatori della mappa: vedi il commento in disegnaCrescita().
+   Il bordo NON segue il tema. Le tessere di sfondo sono chiare sia in tema
+   chiaro sia in tema scuro, quindi un bordo che diventa crema col tema
+   sparisce sopra la mappa - ed e' esattamente quello che succedeva. */
+.mk     { stroke: #241f18; }
+.mk-sel { stroke: #a85c19; }
 
 /* ---------- calendario delle buttate ---------- */
 .cal {

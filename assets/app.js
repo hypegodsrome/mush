@@ -440,6 +440,12 @@ function avviaMappa() {
   $("#pannello-tog").addEventListener("click", () =>
     $("#pannello").classList.toggle("is-chiuso"));
 
+  $("#legenda-tog").addEventListener("click", (e) => {
+    const aperta = e.currentTarget.getAttribute("aria-expanded") === "true";
+    e.currentTarget.setAttribute("aria-expanded", String(!aperta));
+    $("#legenda-corpo").hidden = aperta;
+  });
+
   disegnaCrescita();
   accendiStrato("crescita", true);
   aggiornaFonteMappa();
@@ -502,8 +508,6 @@ async function accendiStrato(nome, acceso) {
       return;
     }
   }
-  if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
-
   const l = stato.strati[nome];
   if (!l) return;
   if (acceso) { l.addTo(m); if (l.setZIndex) l.setZIndex(nome === "boschi" ? 1 : 2); }
@@ -511,23 +515,19 @@ async function accendiStrato(nome, acceso) {
   aggiornaFonteMappa();
 }
 
-function disegnaMF() {
-  const mf = stato.dati.mf;
-  if (!mf) return;
-  stato.strati.mf = L.layerGroup(mf.punti.map((p) => L.circleMarker([p.lat, p.lon], {
-    radius: 7, weight: 0, fillOpacity: p.q < 1 ? 0.35 : 0.75, fillColor: coloreQ(p.q),
-  }).bindPopup(`<b>Meteo Funghi</b><br><span class="pop-q" style="color:${coloreQ(p.q)}">`
-    + `${p.q.toFixed(1).replace(".", ",")}</span> su 10`)));
-}
-
 function disegnaCrescita() {
   if (stato.strati.crescita) stato.mappa.removeLayer(stato.strati.crescita);
   const marcatori = stato.dati.spots.map((s) => {
     const o = s.specie[stato.specie].oggi, q = o?.q ?? 0;
+    // Il raggio non parte da zero e il bordo c'e' sempre: con la siccita'
+    // il punteggio e' 0 e il colore diventa grigio, che sopra il verde dello
+    // strato boschi sparisce del tutto. Un marcatore che non si vede non
+    // dice "punteggio basso", dice "guasto".
     const mk = L.circleMarker([s.lat, s.lon], {
-      radius: 9 + q, weight: s.id === stato.spot.id ? 3 : 1,
+      radius: 10 + q * 0.9,
+      weight: s.id === stato.spot.id ? 4 : 2.5,
       className: s.id === stato.spot.id ? "mk mk-sel" : "mk",
-      fillOpacity: 0.85, fillColor: coloreQ(q),
+      fillOpacity: 0.95, fillColor: coloreQ(q),
     }).bindPopup(`<b>${esc(s.nome)}</b><br>${Math.round(s.quota_dem)} m · ${esc(s.bosco)}<br>
       <span class="pop-q" style="color:${coloreQ(q)}">${q.toFixed(1).replace(".", ",")}</span> su 10
       — ${esc(o?.etichetta || "")}`);
@@ -547,12 +547,43 @@ function disegnaCrescita() {
     stato.strati.crescita.addTo(stato.mappa);
 }
 
+/* Legenda: mostra solo gli strati accesi, e per ognuno la sua scala. Una
+   legenda fissa che spiega cose spente confonde piu' di quanto aiuti. */
+const LEGENDA = {
+  crescita: () => `<b>Crescita</b>
+    <div class="lg-barra"></div>
+    <div class="lg-estremi"><span>0 · irrilevante</span><span>10 · molto favorevole</span></div>`,
+  boschi: () => `<b>Copertura del suolo</b>
+    <div class="lg-voci">${[
+      ["#80ff00", "Bosco di latifoglie"],
+      ["#00a600", "Bosco di conifere"],
+      ["#4dff00", "Bosco misto"],
+      ["#a6f200", "Cespuglieto e bosco in transizione"],
+      ["#ccf24d", "Prateria naturale"],
+      ["#e6e6e6", "Pascolo"],
+      ["#ffffa8", "Seminativo"],
+      ["#e6004d", "Area urbana"],
+    ].map(([c, n]) => `<span class="lg-v"><i style="background:${c}"></i>${n}</span>`).join("")}</div>
+    <small>Corine Land Cover 2018, celle da 100 m</small>`,
+  pioggia: () => `<b>Radar pioggia</b>
+    <div class="lg-voci">${[
+      ["#8cd6ff", "debole"], ["#3d9bd6", "moderata"],
+      ["#1f5fa8", "forte"], ["#8c3ba8", "molto forte"],
+    ].map(([c, n]) => `<span class="lg-v"><i style="background:${c}"></i>${n}</span>`).join("")}</div>`,
+};
+
 function aggiornaFonteMappa() {
-  const on = [...$$("#pannello .sw")].filter((s) => s.checked)
-    .map((s) => s.closest(".strato").querySelector(".strato-nome").textContent.trim());
-  $("#map-src").textContent = on.length
-    ? "Strati attivi: " + on.join(" · ")
-    : "Nessuno strato attivo.";
+  const accesi = [...$$("#pannello .sw")].filter((s) => s.checked).map((s) => s.dataset.strato);
+
+  const corpo = accesi.filter((k) => LEGENDA[k]).map((k) => `<div class="lg-b">${LEGENDA[k]()}</div>`).join("");
+  const leg = $("#legenda-corpo");
+  leg.innerHTML = corpo || `<p class="muted small" style="margin:0">Nessuno strato attivo.</p>`;
+  $(".mappa-legenda").hidden = false;
+
+  const nomi = accesi.map((k) => $(`#pannello .sw[data-strato="${k}"]`)
+    .closest(".strato").querySelector(".strato-nome").textContent.trim());
+  $("#map-src").textContent = nomi.length
+    ? "Strati attivi: " + nomi.join(" · ") : "Nessuno strato attivo.";
 }
 
 /** Chiamata quando cambia zona o specie: ridisegna solo i nostri marcatori. */

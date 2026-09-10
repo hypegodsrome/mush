@@ -180,18 +180,18 @@
     <div id="map"></div>
 
     <button id="pannello-tog" class="pannello-tog" type="button"
-            aria-label="Mostra o nascondi gli strati" title="Strati">≡</button>
+            aria-label="Mostra o nascondi gli strati" title="Strati">&#8801;</button>
 
     <aside id="pannello" class="pannello">
       <div class="strato">
         <label class="strato-cap">
-          <span class="strato-nome"><i>🌳</i> Boschi</span>
+          <span class="strato-nome"><i>&#127795;</i> Boschi</span>
           <input type="checkbox" class="sw" data-strato="boschi">
         </label>
         <div class="strato-corpo">
           <span class="strato-et">Copertura del suolo</span>
           <div class="chip is-on">Corine Land Cover 2018</div>
-          <label class="opac">Opacità
+          <label class="opac">Opacit&agrave;
             <input type="range" id="op-boschi" min="20" max="100" value="70">
           </label>
         </div>
@@ -199,32 +199,22 @@
 
       <div class="strato">
         <label class="strato-cap">
-          <span class="strato-nome"><i>🌧</i> Pioggia</span>
+          <span class="strato-nome"><i>&#127783;</i> Pioggia</span>
           <input type="checkbox" class="sw" data-strato="pioggia">
         </label>
         <div class="strato-corpo">
           <span class="strato-et">Radar, ultimo passaggio</span>
-          <div id="radar-ora" class="chip">—</div>
+          <div id="radar-ora" class="chip">&mdash;</div>
         </div>
       </div>
 
       <div class="strato">
         <label class="strato-cap">
-          <span class="strato-nome"><i>🍄</i> Crescita</span>
+          <span class="strato-nome"><i>&#127812;</i> Crescita</span>
           <input type="checkbox" class="sw" data-strato="crescita" checked>
         </label>
         <div class="strato-corpo">
           <span class="strato-et">Modello a otto fattori, le tue zone</span>
-        </div>
-      </div>
-
-      <div class="strato">
-        <label class="strato-cap">
-          <span class="strato-nome"><i>🗺</i> Meteo Funghi</span>
-          <input type="checkbox" class="sw" data-strato="mf">
-        </label>
-        <div class="strato-corpo">
-          <span class="strato-et">Griglia nazionale, celle da 0,2°</span>
         </div>
       </div>
 
@@ -238,9 +228,9 @@
     </aside>
 
     <div class="mappa-legenda">
-      <span class="legend-label">Crescita</span>
-      <div class="legend-bar"></div>
-      <div class="legend-ticks"><span>Irrilevante</span><span>Appena favorevole</span><span>Molto favorevole</span></div>
+      <button id="legenda-tog" class="legenda-tog" type="button"
+              aria-expanded="true" aria-controls="legenda-corpo">Legenda</button>
+      <div id="legenda-corpo" class="legenda-corpo"></div>
     </div>
   </div>
   <p id="map-src" class="muted small"></p>
@@ -348,8 +338,8 @@
     <ul>
       <li>È un modello meteorologico, non una garanzia: non sa dove sono i tuoi
           boschi, che alberi ci sono, com'è il suolo, né se qualcuno è già passato.</li>
-      <li>La griglia Meteo Funghi ha celle da 0,2° (circa 20 km): dice come sta la
-          zona, non il singolo versante.</li>
+      <li>La griglia Meteo Funghi, usata come confronto, ha celle da 0,2° (circa
+          20 km): dice come sta la zona, non il singolo versante.</li>
       <li>La correzione con la stazione vale entro 8 km da Monte Livata. Più
           lontano restano i dati del modello, che in montagna sbaglia parecchio.</li>
       <li>Il punteggio dice se le <em>condizioni</em> sono favorevoli. Se il
