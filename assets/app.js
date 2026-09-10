@@ -250,7 +250,6 @@ async function avvia() {
   renderPrevisione();
   renderStagioni();
   renderModello();
-  renderFooter();
   attivaTab();
   avviaLightbox();
 }
@@ -1782,13 +1781,6 @@ function renderModello() {
     return `<div class="src"><span><span class="dot ${cls}"></span><b>${esc(k)}</b></span>
       <span>${esc(et[v.stato] || v.stato)}${v.messaggio ? " — " + esc(v.messaggio) : ""}</span></div>`;
   }).join("");
-}
-
-function renderFooter() {
-  const g = new Date(stato.dati.meta.generato);
-  $("#foot-meta").textContent = "Dati generati il "
-    + g.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric",
-                                  hour: "2-digit", minute: "2-digit" });
 }
 
 // ==========================================================================

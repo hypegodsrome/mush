@@ -793,13 +793,6 @@ select {
 .disclaimer ul { margin: 0.8rem 0 0.2rem; padding-left: 1.1rem; color: var(--ink-2); font-size: 0.86rem; }
 .disclaimer li { margin-bottom: 0.45rem; }
 
-.foot {
-  max-width: 940px; margin: 0 auto; padding: 1.25rem 1rem 2rem;
-  display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  border-top: 1px solid var(--line);
-  color: var(--ink-3); font-size: 0.76rem;
-}
-
 .err {
   background: color-mix(in srgb, var(--danger) 12%, var(--card));
   border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
