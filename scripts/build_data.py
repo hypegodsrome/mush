@@ -15,6 +15,7 @@ Uso:  python scripts/build_data.py
 """
 
 import html as html_mod
+import inspect
 import json
 import os
 import re
@@ -371,6 +372,82 @@ def bias_pioggia(daily, stazione, oggi):
 # --------------------------------------------------------------------------
 # Open-Meteo
 # --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# Meteo ora per ora, zona per zona
+#
+# La scheda Meteo mostrava una riga per giorno. Un giorno pero' non e' una
+# risposta: "domani 18 gradi e 4 mm" puo' voler dire un acquazzone alle sei
+# del mattino e sole tutto il resto, oppure pioggia fine dalle otto a sera.
+# Per chi deve decidere quando uscire e' la differenza fra andarci e non
+# andarci.
+#
+# Sedici giorni per sette zone: 2688 ore per variabile. Con cinque variabili
+# il file sta sotto i duecento kilobyte, che e' il prezzo giusto per poter
+# scorrere le ore invece di leggere medie.
+# --------------------------------------------------------------------------
+
+ORARIE = [
+    "temperature_2m",
+    "precipitation",
+    "precipitation_probability",
+    "wind_speed_10m",
+    "wind_gusts_10m",
+    "weather_code",
+    "relative_humidity_2m",
+]
+
+
+def fetch_orario(spots):
+    """Una sola chiamata per tutte le zone, come per i dati giornalieri:
+    l'endpoint accetta liste di coordinate e risponde nello stesso ordine."""
+    q = urllib.parse.urlencode({
+        "latitude": ",".join(str(s["lat"]) for s in spots),
+        "longitude": ",".join(str(s["lon"]) for s in spots),
+        "hourly": ",".join(ORARIE),
+        # Ora locale: qui il dato lo legge una persona che guarda l'orologio,
+        # non un modello. La griglia della pioggia sulla mappa usa UTC perche'
+        # li' a leggere e' il codice.
+        "timezone": "Europe/Rome",
+        "forecast_days": FORECAST_DAYS,
+        "past_days": 1,     # la notte appena passata serve per il contesto
+    })
+    raw = json.loads(_get(f"{OPENMETEO}?{q}", timeout=180).decode())
+    if not isinstance(raw, list):
+        raw = [raw]
+    if len(raw) != len(spots):
+        raise RuntimeError(f"attese {len(spots)} zone, tornate {len(raw)}")
+
+    ore = raw[0]["hourly"]["time"]
+    zone = {}
+    for s, r in zip(spots, raw):
+        h = r["hourly"]
+        if h["time"] != ore:
+            raise RuntimeError(f"{s['id']}: asse dei tempi diverso dalle altre zone")
+        zone[s["id"]] = {
+            # Arrotondato: un decimo di grado e' precisione che il modello non
+            # ha, e moltiplicato per 2688 ore sono kilobyte di finta esattezza.
+            "t": [None if v is None else round(v, 1) for v in h["temperature_2m"]],
+            "mm": [None if v is None else round(v, 1) for v in h["precipitation"]],
+            "prob": h["precipitation_probability"],
+            "vento": [None if v is None else round(v) for v in h["wind_speed_10m"]],
+            "raffica": [None if v is None else round(v) for v in h["wind_gusts_10m"]],
+            "cod": h["weather_code"],
+            "um": h["relative_humidity_2m"],
+        }
+    return {"ore": ore, "zone": zone}
+
+
+def verifica_asse_orario():
+    """Il disegno assume un asse dei tempi solo, condiviso da tutte le zone:
+    l'indice dell'ora vale per chiunque. Se un giorno le zone tornassero con
+    assi diversi, il grafico mostrerebbe la temperatura di Jenne all'ora di
+    Subiaco senza dirlo. fetch_orario lo verifica; questo verifica che il
+    controllo ci sia ancora."""
+    src = inspect.getsource(fetch_orario)
+    assert 'asse dei tempi diverso' in src, \
+        "fetch_orario non controlla piu' che le zone condividano l'asse dei tempi"
+
 
 # --------------------------------------------------------------------------
 # Pioggia prevista, su griglia
@@ -815,6 +892,17 @@ def main():
         return 1  # senza meteo non c'e' sito: fallisci la build
 
     try:
+        orario = fetch_orario(SPOTS)
+        _write("orario.json", orario)
+        meta["sorgenti"]["orario"] = {
+            "stato": "ok", "zone": len(orario["zone"]), "ore": len(orario["ore"]),
+            "da": orario["ore"][0], "a": orario["ore"][-1],
+        }
+    except Exception as e:
+        meta["sorgenti"]["orario"] = {"stato": "errore", "messaggio": str(e)}
+        print(f"[warn] meteo orario: {e}", file=sys.stderr)
+
+    try:
         pv = fetch_pioggia_prev()
         _write("pioggia_prev.json", pv)
         meta["sorgenti"]["pioggia_prev"] = {
@@ -941,6 +1029,7 @@ def selftest():
     verifica_csp()
     verifica_sri()
     verifica_ordine_griglia()
+    verifica_asse_orario()
 
     """Controlli sulla correzione di bias: e' l'unico punto dove i dati
     vengono riscritti, quindi e' l'unico che merita una rete."""

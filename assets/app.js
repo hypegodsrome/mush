@@ -546,6 +546,12 @@ async function accendiStrato(nome, acceso) {
   }
   if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
   if (nome === "confine" && acceso && !stato.strati.confine) disegnaConfine();
+  if (nome === "antenne") {
+    if (acceso && !stato.strati.antenne) await disegnaAntenne();
+    // fermaAntenne anche quando lo strato non si e' disegnato: se il GPS era
+    // acceso va spento comunque.
+    if (acceso) avviaAntenne(); else fermaAntenne();
+  }
 
   const l = stato.strati[nome];
   if (!l) return;
@@ -1123,6 +1129,15 @@ const LEGENDA = {
   mf: () => `<b>Meteo Funghi</b>
     <div class="lg-barra"></div>
     <div class="lg-estremi"><span>0 &middot; irrilevante</span><span>10 &middot; molto favorevole</span></div>`,
+  antenne: () => `<b>Antenne</b>
+    <div class="lg-voci">
+      <span class="lg-v"><i style="background:#0369a1"></i>Telefonia mobile dichiarata</span>
+      <span class="lg-v"><i style="background:#7dd3fc"></i>Comunicazione, tipo non specificato</span>
+    </div>
+    <small>I cerchi sono raggi <strong>stimati</strong> &mdash; 1,2 km in paese,
+      2,5 km fuori &mdash; non copertura misurata. Il pallino verde è dove sei,
+      secondo il GPS. Nessun browser può leggere la cella agganciata: quella
+      indicata è solo la più vicina in linea d'aria.</small>`,
 };
 
 function aggiornaFonteMappa() {
@@ -1143,6 +1158,225 @@ function aggiornaFonteMappa() {
 
 /** Chiamata quando cambia zona o specie: ridisegna solo i nostri marcatori. */
 function disegnaMappa() { if (stato.mappa) disegnaCrescita(); }
+
+// ==========================================================================
+// Antenne
+//
+// Va detto prima di tutto il resto, perche' e' il punto: una pagina web NON
+// puo' sapere a quale cella e' agganciato il telefono. Non esiste un'API che
+// lo permetta. navigator.connection arriva al massimo a effectiveType ("4g"),
+// che e' una stima di velocita' della connessione, non l'identita' di una
+// cella: niente cell ID, niente LAC/TAC, niente PCI, niente eNB, nemmeno il
+// nome dell'operatore. Quei valori li legge solo un'app Android nativa
+// tramite TelephonyManager, con i permessi concessi a mano. Da qui dentro,
+// mai.
+//
+// Cio' che si puo' fare onestamente, ed e' cio' che c'e' qui: prendere la
+// posizione dal GPS, prendere i tralicci censiti in OpenStreetMap, e dire
+// quale sta piu' vicino in linea d'aria. Quando cambia si segna l'ora. Non e'
+// un handover: e' la geometria che cambia. Il telefono puo' benissimo restare
+// agganciato all'antenna di prima, perche' a decidere e' il livello di
+// segnale, e in montagna il segnale lo decide il rilievo - un crinale in
+// mezzo zittisce una cella a due chilometri e ne lascia passare una a
+// quindici.
+//
+// Per lo stesso motivo i cerchi restano cerchi: due raggi dichiarati, presi
+// sull'ordine di grandezza tipico di una macrocella - stretta dove le celle
+// sono fitte, cioe' in paese, larga dove sono rade. Non sono misurati, non
+// sono una promessa di campo, e il fumetto di ogni antenna lo ripete.
+// ==========================================================================
+
+// Raggi disegnati, in metri. 1 = il traliccio sta dentro un centro abitato
+// (lo decide scripts/antenne.py confrontandolo con i place di OSM).
+const ANT_RAGGIO_M = { 1: 1200, 0: 2500 };
+
+// Sotto questo scarto le due antenne si equivalgono e non si cambia: con due
+// pali quasi equidistanti il rumore del GPS li farebbe scambiare a ogni
+// battito e l'elenco si riempirebbe di passaggi che non sono successi.
+const ANT_ISTERESI_M = 100;
+
+const ANT_MAX_STORICO = 8;
+
+let ANT = null;             // data/antenne.json, caricato alla prima accensione
+let antVigilanza = null;    // id di watchPosition, null quando il GPS e' spento
+let antVicina = null;       // l'antenna piu' vicina adesso (l'oggetto, non una copia)
+let antStorico = [];        // ultimi cambi, il piu' recente in testa
+let antIo = null;           // il pallino di dove si e'
+
+/* Distanza in metri. Leaflet ha distanceTo, ma qui la stessa posizione si
+   confronta con tutte le antenne a ogni battito del GPS: costruire cinquanta
+   LatLng al secondo per poi buttarli e' spreco. Piano con correzione del
+   coseno: su queste distanze l'errore e' sotto il metro. */
+function antMetri(lat1, lon1, lat2, lon2) {
+  const dy = (lat2 - lat1) * 111320;
+  const dx = (lon2 - lon1) * 111320 * Math.cos((lat1 + lat2) * Math.PI / 360);
+  return Math.hypot(dx, dy);
+}
+
+/* Le coordinate abbreviate in coda distinguono due pali dello stesso gestore:
+   senza, l'elenco dei passaggi direbbe "da Vodafone a Vodafone". */
+function antNome(a) {
+  const base = a.n || a.op
+    || (a.t === "mobile" ? "Traliccio di telefonia" : "Traliccio di comunicazione");
+  return `${base} (${a.lat.toFixed(3)}, ${a.lon.toFixed(3)})`;
+}
+
+function antFumetto(a, raggio) {
+  const righe = [];
+  if (a.op) righe.push(`Gestore dichiarato in OSM: ${esc(a.op)}`);
+  if (a.h) righe.push(`Alto ${String(a.h).replace(".", ",")} m`);
+  righe.push(`Cerchio disegnato: ${String(raggio / 1000).replace(".", ",")} km, stimato`);
+
+  return `<b>${esc(antNome(a))}</b>
+    <br><span class="pop-cat">${a.t === "mobile"
+      ? "telefonia mobile dichiarata in OSM"
+      : "telecomunicazioni, tipo non specificato"}</span>
+    <br>${righe.join("<br>")}
+    <div class="pop-avviso">Il cerchio non è copertura misurata, e questa
+      non è l'antenna a cui sei connesso: quale cella ti stia servendo
+      il browser non lo può sapere.</div>`;
+}
+
+async function disegnaAntenne() {
+  if (!ANT) {
+    ANT = await carica("antenne").catch((e) => {
+      console.warn("antenne:", e.message);
+      return null;
+    });
+  }
+  if (!ANT?.antenne?.length) return;
+
+  const g = L.layerGroup();
+  for (const a of ANT.antenne) {
+    const raggio = ANT_RAGGIO_M[a.ab ? 1 : 0];
+
+    // L.circle e non circleMarker: questo deve valere metri sul terreno, non
+    // pixel sullo schermo, altrimenti ingrandendo la mappa il "raggio
+    // operativo" resterebbe un bollino delle stesse dimensioni.
+    // interactive:false perche' i cerchi si sovrappongono: cliccabili,
+    // ruberebbero il clic al pallino dell'antenna che sta sotto.
+    L.circle([a.lat, a.lon], {
+      renderer: tela(), radius: raggio, interactive: false,
+      color: "#0ea5e9", weight: 1, opacity: 0.45,
+      fillColor: "#0ea5e9", fillOpacity: 0.05,
+    }).addTo(g);
+
+    L.circleMarker([a.lat, a.lon], {
+      renderer: tela(), radius: 5, weight: 2, color: "#fff", opacity: 0.9,
+      fillColor: a.t === "mobile" ? "#0369a1" : "#7dd3fc", fillOpacity: 0.95,
+    }).bindPopup(antFumetto(a, raggio)).addTo(g);
+  }
+  stato.strati.antenne = g;
+}
+
+function antScrivi(nome, sotto) {
+  const n = $("#ant-nome"), d = $("#ant-dist");
+  if (n) n.textContent = nome;
+  if (d) d.textContent = sotto || "";
+}
+
+function antElenco() {
+  const el = $("#ant-log");
+  if (!el) return;
+  el.innerHTML = antStorico.length
+    ? antStorico.map((r) => `<div class="ant-r">alle <b>${esc(r.ora)}</b>
+        la più vicina è cambiata da ${esc(r.da)} a ${esc(r.a)}</div>`).join("")
+    : `<p class="ant-nulla">Nessun cambio finora.</p>`;
+}
+
+function antAggiorna(pos) {
+  if (!ANT?.antenne?.length) return;
+  const { latitude: lat, longitude: lon, accuracy: acc } = pos.coords;
+
+  let piu = null, dmin = Infinity;
+  for (const a of ANT.antenne) {
+    const d = antMetri(lat, lon, a.lat, a.lon);
+    if (d < dmin) { dmin = d; piu = a; }
+  }
+  if (!piu) return;
+
+  // Isteresi: si lascia vincere la nuova solo se guadagna abbastanza.
+  let scelta = piu, dScelta = dmin;
+  if (antVicina) {
+    const dOra = antMetri(lat, lon, antVicina.lat, antVicina.lon);
+    if (dOra - dmin < ANT_ISTERESI_M) { scelta = antVicina; dScelta = dOra; }
+  }
+
+  if (antVicina !== scelta) {
+    // Alla prima lettura antVicina e' null: non e' un cambio, e' l'inizio.
+    if (antVicina) {
+      antStorico.unshift({
+        ora: new Date().toLocaleTimeString("it-IT",
+          { hour: "2-digit", minute: "2-digit" }),
+        da: antNome(antVicina), a: antNome(scelta),
+      });
+      antStorico = antStorico.slice(0, ANT_MAX_STORICO);
+    }
+    antVicina = scelta;
+    antElenco();
+  }
+
+  // Il pallino di dove si e', appeso allo strato: cosi' sparisce da solo
+  // quando lo strato si spegne, senza doverlo rincorrere.
+  if (!antIo) {
+    antIo = L.circleMarker([lat, lon], {
+      renderer: tela(), radius: 6, weight: 3, color: "#fff",
+      fillColor: "#16a34a", fillOpacity: 1,
+    }).bindPopup("Sei qui, secondo il GPS.");
+    if (stato.strati.antenne) antIo.addTo(stato.strati.antenne);
+  } else {
+    antIo.setLatLng([lat, lon]);
+  }
+
+  antScrivi(antNome(scelta),
+    `${Math.round(dScelta)} m in linea d'aria`
+    + (acc ? ` · GPS ±${Math.round(acc)} m` : ""));
+}
+
+function avviaAntenne() {
+  const box = $("#ant-vivo");
+  if (box) box.hidden = false;
+  antElenco();
+
+  if (!ANT?.antenne?.length) {
+    antScrivi("Nessuna antenna nei dati.",
+      "Lancia python scripts/antenne.py per generare data/antenne.json.");
+    return;
+  }
+  if (antVigilanza !== null) return;          // gia' in ascolto
+  if (!navigator.geolocation) {
+    antScrivi("GPS non disponibile.", "Questo browser non espone la posizione.");
+    return;
+  }
+
+  antScrivi("In attesa del GPS…", "");
+  antVigilanza = navigator.geolocation.watchPosition(
+    antAggiorna,
+    (e) => antScrivi(
+      e.code === e.PERMISSION_DENIED
+        ? "Permesso di posizione negato." : "Posizione non disponibile.",
+      "Senza posizione non si può dire quale antenna sia la più vicina."),
+    // maximumAge basso perche' in auto una posizione di mezzo minuto fa e'
+    // gia' a un chilometro da qui, e sarebbe l'antenna sbagliata.
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+}
+
+/* Un watchPosition dimenticato acceso tiene il GPS al lavoro e svuota la
+   batteria di chi e' in giro per boschi - cioe' proprio chi usa questo sito.
+   Si spegne appena lo strato si spegne o si lascia la vista mappa. */
+function fermaAntenne() {
+  if (antVigilanza !== null) {
+    navigator.geolocation.clearWatch(antVigilanza);
+    antVigilanza = null;
+  }
+  if (antIo) {
+    stato.strati.antenne?.removeLayer(antIo);
+    antIo = null;
+  }
+  antVicina = null;
+  const box = $("#ant-vivo");
+  if (box) box.hidden = true;
+}
 
 // ==========================================================================
 // Vista: specie
@@ -1427,6 +1661,151 @@ function avviaLightbox() {
  *  cambiare l'analisi. */
 function spotMeteo() {
   return stato.dati.spots.find((s) => s.id === $("#sel-meteo").value) || stato.spot;
+}
+
+// ==========================================================================
+// La linea del tempo
+//
+// Un giorno non e' una risposta. "Domani 18 gradi e 4 mm" puo' voler dire un
+// acquazzone alle sei del mattino e sole tutto il resto, oppure pioggia fine
+// dalle otto a sera: per chi deve decidere quando uscire e' la differenza fra
+// andarci e non andarci. Quindi le ore si scorrono, e le sette zone si
+// aggiornano tutte insieme - cosi' si vede anche DOVE il tempo e' diverso,
+// non solo quando.
+//
+// L'asse dei tempi e' uno solo, condiviso da tutte le zone: lo garantisce
+// build_data.py, che rifiuta di scrivere il file se una zona torna con ore
+// diverse dalle altre.
+// ==========================================================================
+
+let ORARIO = null;
+let oraSel = 0;
+let oraTimer = null;
+const ORA_MS = 260;          // un'ora ogni quarto di secondo
+
+async function montaOrario() {
+  if (ORARIO === null) {
+    ORARIO = await carica("orario").catch((e) => {
+      console.warn("meteo orario:", e.message);
+      return false;
+    });
+  }
+  const wrap = $(".linea-wrap");
+  if (!ORARIO) { if (wrap) wrap.hidden = true; return; }
+  if (wrap) wrap.hidden = false;
+
+  const sl = $("#linea-sl");
+  if (sl.max !== String(ORARIO.ore.length - 1)) {
+    sl.max = String(ORARIO.ore.length - 1);
+    // Si parte dall'ora corrente, non dall'inizio del file: la prima domanda
+    // e' sempre "adesso", il resto lo si cerca trascinando.
+    oraSel = indiceOraCorrente();
+    sl.value = String(oraSel);
+    disegnaGiorni();
+    sl.addEventListener("input", () => { fermaOre(); mostraOra(+sl.value); });
+    $("#linea-play").addEventListener("click", () => (oraTimer ? fermaOre() : avviaOre()));
+  }
+  mostraOra(oraSel);
+}
+
+/* Le ore del file sono locali e senza fuso ("2026-09-10T17:00"): confrontarle
+   come testo con l'ora locale di adesso evita di passare per Date, che su
+   quelle stringhe assume comportamenti diversi da browser a browser. */
+function indiceOraCorrente() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  const adesso = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
+  const i = ORARIO.ore.indexOf(adesso);
+  if (i >= 0) return i;
+  // Se l'ora esatta non c'e' (file vecchio di qualche ora) si prende la prima
+  // successiva, e in mancanza l'ultima disponibile.
+  const dopo = ORARIO.ore.findIndex((o) => o >= adesso);
+  return dopo >= 0 ? dopo : ORARIO.ore.length - 1;
+}
+
+/* La striscia dei giorni: ogni giorno largo quanto le ore che contiene, cosi'
+   il primo e l'ultimo - che spesso sono spezzoni - non mentono sulla loro
+   durata. */
+function disegnaGiorni() {
+  const conteggio = new Map();
+  for (const o of ORARIO.ore) {
+    const g = o.slice(0, 10);
+    conteggio.set(g, (conteggio.get(g) || 0) + 1);
+  }
+  const tot = ORARIO.ore.length;
+  const oggi = new Date().toISOString().slice(0, 10);
+  $("#linea-giorni").innerHTML = [...conteggio].map(([g, n]) => {
+    const d = giorno(g);
+    return `<span class="lg-g${g === oggi ? " is-oggi" : ""}"
+      style="flex:0 0 ${(100 * n / tot).toFixed(3)}%">
+      <b>${DOW[d.getUTCDay()]}</b><span>${g.slice(8, 10)}</span></span>`;
+  }).join("");
+}
+
+function mostraOra(i) {
+  if (!ORARIO) return;
+  oraSel = Math.max(0, Math.min(ORARIO.ore.length - 1, i));
+  const sl = $("#linea-sl");
+  sl.value = String(oraSel);
+
+  const iso = ORARIO.ore[oraSel];
+  const d = giorno(iso.slice(0, 10));
+  const testa = `${DOW[d.getUTCDay()]} ${iso.slice(8, 10)}, ${iso.slice(11, 16)}`;
+
+  const b = $("#linea-bolla");
+  b.textContent = testa;
+  // La bolla insegue il cursore. Il 2% di margine ai lati tiene conto della
+  // pallina del cursore, che non arriva mai al bordo esatto della pista.
+  const f = ORARIO.ore.length > 1 ? oraSel / (ORARIO.ore.length - 1) : 0;
+  b.style.left = `calc(${(2 + f * 96).toFixed(2)}% )`;
+
+  const adesso = indiceOraCorrente();
+  b.classList.toggle("is-adesso", oraSel === adesso);
+
+  $("#ora-zone").innerHTML = stato.dati.spots.map((s) => {
+    const z = ORARIO.zone[s.id];
+    if (!z) return "";
+    const [ic, desc] = MET ? MET.tempo(z.cod[oraSel]) : ["", ""];
+    const mm = z.mm[oraSel], prob = z.prob[oraSel];
+    return `<div class="oz${s.id === stato.spot.id ? " is-sel" : ""}"
+                 data-spot="${esc(s.id)}" title="${esc(desc)}">
+      <div class="oz-n">${esc(s.nome)}</div>
+      <div class="oz-i">${ic}</div>
+      <div class="oz-t">${z.t[oraSel] == null ? "&ndash;"
+        : Math.round(z.t[oraSel]) + "&deg;"}</div>
+      <div class="oz-d">
+        ${mm > 0 ? `<span class="oz-mm">${mm.toFixed(1).replace(".", ",")} mm</span>`
+                 : `<span class="muted">${prob == null ? "" : prob + "%"}</span>`}
+        <span class="muted">${z.vento[oraSel] == null ? "" : z.vento[oraSel] + " km/h"}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  $$("#ora-zone .oz").forEach((el) => el.addEventListener("click", () => {
+    const s = stato.dati.spots.find((x) => x.id === el.dataset.spot);
+    if (!s) return;
+    stato.spot = s;
+    $("#sel-spot").value = s.id;
+    $("#sel-meteo").value = s.id;
+    renderMeteo();
+    renderPrevisione();
+  }));
+}
+
+function avviaOre() {
+  if (oraTimer || !ORARIO) return;
+  $("#linea-play").textContent = "\u275a\u275a";
+  oraTimer = setInterval(() => {
+    if (oraSel >= ORARIO.ore.length - 1) { fermaOre(); return; }
+    mostraOra(oraSel + 1);
+  }, ORA_MS);
+}
+
+function fermaOre() {
+  if (!oraTimer) return;
+  clearInterval(oraTimer);
+  oraTimer = null;
+  $("#linea-play").textContent = "\u25b6";
 }
 
 function renderMeteo() {
@@ -1800,8 +2179,16 @@ function mostraVista(b) {
   // momento del cambio deve essere lo stesso in cui Leaflet ricalcola.
   $("main").classList.toggle("e-mappa", v === "mappa");
 
+  // Il GPS non deve restare acceso mentre si guarda la previsione: chi ha
+  // cambiato scheda non sta piu' guardando le antenne, ma la batteria si
+  // consumerebbe lo stesso.
+  if (v !== "mappa") fermaAntenne();
+
   if (v === "specie") montaSpecie();
   if (v === "mappa") avviaMappa();
   if (v === "webcam") montaCams();
-  if (v === "meteo") caricaMeteoLib().then(renderMeteo);
+  if (v === "meteo") caricaMeteoLib().then(() => { renderMeteo(); montaOrario(); });
+  // Lo scorrimento delle ore va fermato uscendo dalla scheda: un timer che
+  // continua a ridisegnare una vista nascosta e' solo batteria buttata.
+  if (v !== "meteo") fermaOre();
 }

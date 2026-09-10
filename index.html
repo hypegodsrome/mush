@@ -265,6 +265,36 @@
         </div>
       </div>
 
+      <!-- Antenne. L'avvertenza non e' una postilla da nascondere: e' la
+           risposta alla domanda che porta qui. Nessuna pagina web puo'
+           leggere la cella servente, quindi si dice cosa mostra davvero
+           questo strato prima ancora di accenderlo. -->
+      <div class="strato">
+        <label class="strato-cap">
+          <span class="strato-nome"><i>&#128225;</i> Antenne</span>
+          <input type="checkbox" class="sw" data-strato="antenne">
+        </label>
+        <div class="strato-corpo">
+          <span class="strato-et">Tralicci da OpenStreetMap &middot; raggi stimati, non misurati</span>
+          <p class="ant-limite">
+            Una pagina web <strong>non pu&ograve; sapere a quale antenna sei
+            connesso</strong>: il browser non espone n&eacute; cell ID n&eacute;
+            PCI n&eacute; eNB, e <code>navigator.connection</code> dice al massimo
+            &laquo;4g&raquo;. Solo un&rsquo;app Android nativa lo legge.
+            Qui c&rsquo;&egrave; l&rsquo;<strong>antenna pi&ugrave; vicina in linea
+            d&rsquo;aria</strong>, calcolata dal GPS. In montagna la copertura la
+            decide il rilievo, non un cerchio su una mappa.
+          </p>
+          <div id="ant-vivo" class="ant-vivo" hidden>
+            <span class="strato-et">Antenna pi&ugrave; vicina (stima geometrica)</span>
+            <strong id="ant-nome" class="ant-nome">&mdash;</strong>
+            <span id="ant-dist" class="ant-dist"></span>
+            <span class="strato-et">Cambi della pi&ugrave; vicina (handover stimato)</span>
+            <div id="ant-log" class="ant-log"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="strato strato-poi">
         <span class="strato-et">Cosa c'&egrave; sulla mappa</span>
         <div id="poi-griglia" class="poi-griglia">
@@ -359,6 +389,25 @@
     <label>Zona
       <select id="sel-meteo"></select>
     </label>
+  </div>
+
+  <span class="eyebrow">Ora per ora</span>
+  <h2>Che tempo fa, e quando</h2>
+  <p class="muted small">Trascina la barra, o premi play: la temperatura, la
+     pioggia e il vento di tutte le zone si spostano all'ora scelta.</p>
+
+  <div class="linea-wrap">
+    <div id="ora-zone" class="ora-zone"></div>
+    <div class="linea">
+      <button id="linea-play" class="linea-play" type="button"
+              aria-label="Avvia o ferma lo scorrimento delle ore">&#9654;</button>
+      <div class="linea-pista">
+        <div id="linea-bolla" class="linea-bolla"></div>
+        <input id="linea-sl" class="linea-sl" type="range" min="0" max="0" value="0"
+               aria-label="Ora mostrata">
+        <div id="linea-giorni" class="linea-giorni"></div>
+      </div>
+    </div>
   </div>
 
   <div id="staz-wrap">
