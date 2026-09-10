@@ -434,7 +434,7 @@ select {
 /* Pannello degli strati, sopra la mappa. */
 .pannello {
   position: absolute; top: 0.75rem; right: 0.75rem; z-index: 420;
-  width: min(280px, calc(100vw - 1.5rem));
+  width: min(330px, calc(100vw - 1.5rem));
   max-height: calc(100% - 1.5rem);
   overflow-y: auto;
   display: grid; gap: 0.5rem;
@@ -1205,9 +1205,14 @@ select {
 
 /* ---------- sigle dei sentieri ---------- */
 /* Come i segnavia sul sasso: numero scuro su fondo chiaro, bordo rosso.
-   Il fondo pieno serve perche' sopra una mappa a colori il testo nudo non
-   si legge in nessun caso. */
-.leaflet-tooltip.sent-sigla {
+   Il fondo pieno serve perche' sopra una mappa a colori il testo nudo non si
+   legge in nessun caso.
+   Il riquadro sta sul figlio e non sull'elemento esterno: quello lo posiziona
+   Leaflet con un `transform`, e metterci il nostro lo cancellava. */
+.sent-sigla { width: auto !important; height: auto !important; }
+.sent-sigla span {
+  position: absolute;
+  transform: translate(-50%, -50%);
   padding: 1px 5px;
   background: #fffdf8;
   border: 1.5px solid #d3352b;
@@ -1218,6 +1223,109 @@ select {
   box-shadow: 0 1px 3px rgb(0 0 0 / .35);
   pointer-events: none;
 }
-.leaflet-tooltip.sent-sigla::before { display: none; }   /* niente punta */
 
-.senza-sigle .leaflet-tooltip.sent-sigla { display: none; }
+
+/* ==========================================================================
+   Comandi della pioggia, punti d'interesse, servizi
+   ========================================================================== */
+
+.rain-riga { display: flex; align-items: center; gap: 0.5rem; }
+.rain-play {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font-size: 0.8rem; line-height: 1; cursor: pointer;
+}
+.rain-play:hover { border-color: var(--acc); }
+.rain-sl { flex: 1 1 auto; min-width: 0; accent-color: var(--acc); }
+
+/* Intestazione del pannello: sul telefono e' la maniglia del foglio, e la
+   croce e' la via d'uscita. Su schermo largo basta come titolo. */
+.pannello-cap {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0.25rem 0.1rem;
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 700;
+}
+.pannello-chiudi {
+  border: 0; background: none; color: var(--ink-3);
+  font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 0.25rem;
+}
+.pannello-chiudi:hover { color: var(--ink); }
+
+.strato-poi { padding-bottom: 0.35rem; }
+.strato-poi > .strato-et { display: block; padding: 0 0.9rem 0.4rem; }
+
+.poi-tit {
+  padding: 0.45rem 0.9rem 0.3rem;
+  font-size: 0.72rem; font-weight: 700; color: var(--ink-2);
+}
+.poi-tit small { font-weight: 500; color: var(--ink-3); }
+.poi-tit small::before { content: " \00b7  "; }
+
+/* Una casella per riga su schermo stretto, due quando c'e' spazio: i nomi
+   ("Noleggio ciaspole e sci") vanno a capo, e su due righe strette
+   diventerebbero illeggibili. minmax(0,1fr) e non 1fr, altrimenti la colonna
+   non scende sotto la larghezza del testo piu' lungo e il pannello sborda. */
+.poi-caselle {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.15rem;
+  padding: 0 0.55rem 0.3rem;
+}
+.poi-v {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center; gap: 0.45rem;
+  padding: 0.32rem 0.35rem; border-radius: 8px;
+  font-size: 0.82rem; cursor: pointer;
+}
+.poi-v:hover { background: var(--bg-2); }
+.poi-v i { font-style: normal; font-size: 0.95rem; line-height: 1; }
+.poi-v span { min-width: 0; }
+.poi-v b {
+  font-size: 0.7rem; font-weight: 600; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.poi-v input { accent-color: var(--acc); }
+.poi-v.is-vuota { opacity: 0.45; cursor: default; }
+.poi-v.is-vuota:hover { background: none; }
+
+/* Servizi: quadrato con l'emoji, per non confonderli con i pallini dei
+   luoghi. La trasformazione va sullo span interno e non sull'icona, perche'
+   quella la posiziona Leaflet e sovrascriverla accatasta tutto in un punto. */
+.poi-serv { background: none; border: 0; }
+.poi-serv > span {
+  display: grid; place-items: center;
+  width: 26px; height: 26px; margin: -13px 0 0 -13px;
+  border-radius: 8px; font-size: 0.9rem; line-height: 1;
+  background: var(--card); border: 1.5px solid var(--acc);
+  box-shadow: var(--sh-1);
+}
+
+.pop-cat {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--ink-3); font-weight: 700;
+}
+.pop-avviso {
+  margin-top: 0.4rem; padding: 0.35rem 0.45rem; border-radius: 7px;
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  font-size: 0.75rem; line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  /* Sul telefono il pannello e' un foglio largo quanto lo schermo: ci stanno
+     due colonne, e le caselle si toccano col dito. */
+  .poi-caselle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .poi-v { padding: 0.5rem 0.4rem; font-size: 0.8rem; }
+  .rain-play { width: 40px; height: 40px; }
+  .poi-serv > span { width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+}
+
+@media (max-width: 760px) {
+  /* Col foglio aperto lo schermo e' pieno: i comandi dello zoom e la legenda
+     restavano a galleggiarci sopra, e si finiva per premere "+" credendo di
+     spuntare una casella. Spariscono finche' il foglio e' aperto. */
+  .mappa-scena:has(.pannello:not(.is-chiuso)) .leaflet-control-container,
+  .mappa-scena:has(.pannello:not(.is-chiuso)) .mappa-legenda {
+    opacity: 0; pointer-events: none;
+  }
+  /* L'ultima casella finiva sotto la barra di navigazione. */
+  .pannello { padding-bottom: 1.75rem; }
+}

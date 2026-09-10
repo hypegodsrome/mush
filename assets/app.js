@@ -34,6 +34,22 @@ function giorno(iso) {
 const dow = (iso) => DOW[giorno(iso).getUTCDay()];
 const gg = (iso) => iso.slice(8, 10);
 
+/** Componenti RGB della scala: serve al disegno su canvas, dove non si puo'
+ *  passare una stringa "rgb(...)" pixel per pixel. */
+function coloreQrgb(q) {
+  const stops = [[0, [156, 163, 175]], [3, [156, 163, 175]], [5, [251, 191, 36]],
+                 [7, [249, 115, 22]], [10, [239, 68, 68]]];
+  q = Math.max(0, Math.min(10, q));
+  for (let i = 1; i < stops.length; i++) {
+    const [x1, c1] = stops[i - 1], [x2, c2] = stops[i];
+    if (q <= x2) {
+      const t = x2 === x1 ? 0 : (q - x1) / (x2 - x1);
+      return c1.map((c, j) => Math.round(c + (c2[j] - c) * t));
+    }
+  }
+  return [239, 68, 68];
+}
+
 /** Scala colore allineata alla legenda di Meteo Funghi. */
 function coloreQ(q) {
   const stops = [[0, [156, 163, 175]], [3, [156, 163, 175]], [5, [251, 191, 36]],
@@ -400,6 +416,15 @@ const CORINE = "https://image.discomap.eea.europa.eu/arcgis/services/Corine/CLC2
    proprio quando servono. Le linee restano nitide a ogni zoom e si cliccano.
    Il file pesa 288 KB, quindi si carica solo alla prima accensione. */
 const ZOOM_SIGLE = 13;   // sotto, le etichette sarebbero un groviglio
+const MAX_SIGLE = 60;    // quante sigle al massimo tenere insieme in pagina
+
+/* Un canvas solo per tutto il disegno vettoriale.
+   Con il renderer SVG di Leaflet ogni tratto e ogni cella diventano un
+   elemento nel DOM, che il browser riproietta a ogni spostamento: i soli
+   sentieri ne facevano piu' di mille, e la mappa diventava inusabile.
+   Su canvas sono pennellate, non nodi. */
+let TELA = null;
+const tela = () => (TELA = TELA || L.canvas({ padding: 0.3 }));
 const PUNTI_PER_SIGLA = 70;   // ogni quanti punti ripetere la sigla.
                               // A 25 il tracciato diventava una collana di
                               // etichette attaccate e non si leggeva la mappa.
@@ -421,6 +446,9 @@ function avviaMappa() {
   aggiungiControlli();
 
   cambiaBase("osm");
+  // Duecento kilobyte di punti d'interesse: si chiedono alla prima apertura
+  // della mappa, non all'avvio del sito.
+  montaPoi();
 
   // Boschi: il WMS non manda header CORS, ma per un tile layer non servono -
   // sono immagini, non fetch.
@@ -449,6 +477,9 @@ function avviaMappa() {
   }));
   $("#pannello-tog").addEventListener("click", () =>
     $("#pannello").classList.toggle("is-chiuso"));
+
+  $("#pannello-chiudi").addEventListener("click", () =>
+    $("#pannello").classList.add("is-chiuso"));
 
   $("#legenda-tog").addEventListener("click", (e) => {
     const aperta = e.currentTarget.getAttribute("aria-expanded") === "true";
@@ -508,37 +539,384 @@ function cambiaBase(quale) {
 async function accendiStrato(nome, acceso) {
   const m = stato.mappa;
   if (nome === "pioggia" && acceso && !stato.strati.pioggia) {
-    try {
-      const r = await fetch("https://api.rainviewer.com/public/weather-maps.json");
-      const d = await r.json();
-      const f = d.radar.past[d.radar.past.length - 1];
-      // Il radar gratuito di RainViewer copre fino allo zoom 7: da 8 in su
-      // restituisce sempre la stessa immagine con scritto "Zoom Level Not
-      // Supported", che finiva dritta sulla mappa. Con maxNativeZoom Leaflet
-      // ingrandisce l'ultimo livello con dati veri: sgranato, ma la domanda
-      // a cui deve rispondere - sta piovendo sulla zona? - regge lo stesso.
-      stato.strati.pioggia = L.tileLayer(
-        `${d.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`,
-        { opacity: 0.65, maxNativeZoom: 7, maxZoom: 19,
-          attribution: "Radar &copy; RainViewer" });
-      $("#radar-ora").textContent = new Date(f.time * 1000)
-        .toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-    } catch (e) {
-      $("#radar-ora").textContent = "non disponibile";
-      return;
-    }
+    if (!await preparaPioggia()) { $("#radar-ora").textContent = "non disponibile"; return; }
   }
+  if (nome === "pioggia") { if (acceso) avviaPioggia(); else fermaPioggia(); }
   if (nome === "sentieri" && acceso && !stato.strati.sentieri) {
     await disegnaSentieri();
   }
   if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
+  if (nome === "confine" && acceso && !stato.strati.confine) disegnaConfine();
 
   const l = stato.strati[nome];
   if (!l) return;
   if (acceso) { l.addTo(m); if (l.setZIndex) l.setZIndex(nome === "boschi" ? 1 : 2); }
   else m.removeLayer(l);
+
+  // Le sigle seguono i sentieri: restare appese a uno strato spento sarebbe
+  // solo peso e confusione.
+  if (nome === "sentieri") {
+    if (acceso) aggiornaSigle();
+    else if (stato.strati.sigle) m.removeLayer(stato.strati.sigle);
+  }
   aggiornaFonteMappa();
 }
+
+// ==========================================================================
+// Cosa c'e' sul territorio
+//
+// Due elenchi diversi, tenuti separati di proposito:
+//
+//   data/poi.json      luoghi presi da OpenStreetMap - rifugi, fontane, vette,
+//                      parcheggi. Aperto, verificabile, si aggiorna da solo.
+//   data/servizi.json  recapiti di maneggi, noleggi, scuole di sci. Scritti a
+//                      mano, e ognuno dichiara quanto vale la sua posizione.
+//
+// I secondi si disegnano con un'icona quadrata e i primi con un pallino: a
+// colpo d'occhio si capisce che sono due cose diverse, e chi cerca un numero
+// di telefono non finisce su una fontana.
+//
+// Tutto si carica alla prima apertura della mappa, non all'avvio del sito:
+// sono duecento kilobyte che a chi guarda solo la previsione non servono.
+// ==========================================================================
+
+let POI = null, SERV = null;
+let poiMontati = false;
+const STRATI_POI = {};        // chiave categoria -> layer acceso
+
+const COLORE_POI = {
+  visita: "#2563eb", rifugi: "#b45309", dormire: "#7c3aed", campeggi: "#0d9488",
+  mangiare: "#dc2626", picnic: "#16a34a", acqua: "#0ea5e9", vette: "#7c2d12",
+  grotte: "#475569", cascate: "#0891b2", parcheggi: "#334155",
+  ricarica: "#0f766e", trasporti: "#64748b",
+};
+
+const telLink = (n) =>
+  `<a href="tel:${esc(String(n).replace(/[^0-9+]/g, ""))}">${esc(n)}</a>`;
+
+async function montaPoi() {
+  if (poiMontati) return;
+  poiMontati = true;
+  const [p, sv] = await Promise.all([
+    carica("poi").catch((e) => { console.warn("poi:", e.message); return null; }),
+    carica("servizi").catch((e) => { console.warn("servizi:", e.message); return null; }),
+  ]);
+  POI = p; SERV = sv;
+  costruisciGriglia();
+  disegnaConfine();
+}
+
+/* Le caselle si costruiscono dai dati, non a mano nell'HTML: cosi' il numero
+   fra parentesi e' sempre quello vero e non una promessa scaduta. */
+function costruisciGriglia() {
+  const g = $("#poi-griglia");
+  if (!g) return;
+  const pezzi = [];
+
+  const casella = (chiave, icona, nome, n) => `
+    <label class="poi-v${n ? "" : " is-vuota"}">
+      <input type="checkbox" class="sw-poi" data-poi="${esc(chiave)}"${n ? "" : " disabled"}>
+      <i aria-hidden="true">${icona}</i>
+      <span>${esc(nome)}</span>
+      <b>${n}</b>
+    </label>`;
+
+  if (POI?.punti) {
+    const n = {};
+    POI.punti.forEach((p) => { n[p.c] = (n[p.c] || 0) + 1; });
+    pezzi.push(`<div class="poi-tit">Sul territorio <small>OpenStreetMap</small></div>
+      <div class="poi-caselle">`
+      + Object.entries(POI.categorie)
+          .map(([k, c]) => casella("p:" + k, c.icona, c.nome, n[k] || 0)).join("")
+      + `</div>`);
+  }
+
+  if (SERV?.servizi) {
+    const n = {};
+    SERV.servizi.forEach((v) => {
+      if (v.lat != null) n[v.cat] = (n[v.cat] || 0) + 1;
+    });
+    pezzi.push(`<div class="poi-tit">Sport, noleggi e servizi <small>con recapiti</small></div>
+      <div class="poi-caselle">`
+      + Object.entries(SERV.categorie)
+          .map(([k, c]) => casella("s:" + k, c.icona, c.nome, n[k] || 0)).join("")
+      + `</div>`);
+  }
+
+  g.innerHTML = pezzi.join("") || `<p class="muted small">Elenchi non disponibili.</p>`;
+  $$("#poi-griglia .sw-poi").forEach((c) =>
+    c.addEventListener("change", () => accendiPoi(c.dataset.poi, c.checked)));
+}
+
+function accendiPoi(chiave, acceso) {
+  if (!stato.mappa) return;
+  if (!STRATI_POI[chiave]) STRATI_POI[chiave] = creaStratoPoi(chiave);
+  const l = STRATI_POI[chiave];
+  if (!l) return;
+  if (acceso) l.addTo(stato.mappa);
+  else stato.mappa.removeLayer(l);
+  aggiornaFonteMappa();
+}
+
+function creaStratoPoi(chiave) {
+  const [tipo, cat] = chiave.split(":");
+  return tipo === "p" ? stratoOsm(cat) : stratoServizi(cat);
+}
+
+function stratoOsm(cat) {
+  if (!POI?.punti) return null;
+  const colore = COLORE_POI[cat] || "#475569";
+  const etichetta = POI.categorie[cat]?.nome || cat;
+  const g = L.layerGroup();
+
+  for (const p of POI.punti) {
+    if (p.c !== cat) continue;
+    const t = p.t || {};
+    const righe = [];
+    if (t.ele) righe.push(`${Math.round(+t.ele)} m`);
+    if (t.street) righe.push(esc(t.street + (t.housenumber ? " " + t.housenumber : "")));
+    if (t.city) righe.push(esc(t.city));
+    if (t.opening_hours) righe.push(esc(t.opening_hours));
+    if (t.description) righe.push(esc(t.description));
+    const tel = t.phone ? `<div>${telLink(t.phone)}</div>` : "";
+    // rel="noopener": un link che apre una scheda nuova le lascia altrimenti
+    // un riferimento a questa pagina, ed e' un appiglio in piu' per chi
+    // volesse manometterla dall'altra parte.
+    const web = t.website && /^https?:\/\//.test(t.website)
+      ? `<div><a href="${esc(t.website)}" target="_blank" rel="noopener noreferrer">sito</a></div>`
+      : "";
+
+    L.circleMarker([p.lat, p.lon], {
+      renderer: tela(), radius: 6, weight: 2, color: "#fff", opacity: 0.9,
+      fillColor: colore, fillOpacity: 0.95,
+    }).bindPopup(
+      `<b>${esc(p.n)}</b><br><span class="pop-cat">${esc(etichetta)}</span>`
+      + (righe.length ? `<br>${righe.join(" &middot; ")}` : "") + tel + web
+    ).addTo(g);
+  }
+  return g;
+}
+
+function stratoServizi(cat) {
+  if (!SERV?.servizi) return null;
+  const c = SERV.categorie[cat] || { nome: cat, icona: "\u2022" };
+  const g = L.layerGroup();
+
+  for (const v of SERV.servizi) {
+    if (v.cat !== cat || v.lat == null) continue;
+    const tel = (v.tel || []).map(telLink).join(" &middot; ");
+    const mail = v.email
+      ? `<div><a href="mailto:${esc(v.email)}">${esc(v.email)}</a></div>` : "";
+    // Un punto trovato solo per paese non e' un indirizzo: dirlo evita che
+    // qualcuno guidi fino a un pallino e non trovi niente.
+    const avviso = v.precisione === "localita"
+      ? `<div class="pop-avviso">Posizione approssimata: solo la localit&agrave;
+         (${esc(v.zona || "")})</div>` : "";
+
+    L.marker([v.lat, v.lon], {
+      icon: L.divIcon({ className: "poi-serv",
+                        html: `<span>${c.icona}</span>`, iconSize: null }),
+    }).bindPopup(
+      `<b>${esc(v.nome)}</b><br><span class="pop-cat">${esc(c.nome)}</span>`
+      + (v.note ? `<br>${esc(v.note)}` : "")
+      + (v.indirizzo ? `<br>${esc(v.indirizzo)}` : "")
+      + (tel ? `<div>${tel}</div>` : "") + mail + avviso
+    ).addTo(g);
+  }
+  return g;
+}
+
+/* Il confine dell'area protetta: una linea sola, sotto tutto il resto.
+   Riempirla di verde coprirebbe i boschi, che sono l'informazione vera. */
+function disegnaConfine() {
+  if (!POI?.confine?.length || stato.strati.confine) return;
+  stato.strati.confine = L.layerGroup(POI.confine.map((anello) =>
+    L.polyline(anello, { renderer: tela(), color: "#15803d", weight: 2.5,
+                         opacity: 0.85, dashArray: "6 4", interactive: false })));
+  const sw = $('#pannello .sw[data-strato="confine"]');
+  if (sw?.checked) stato.strati.confine.addTo(stato.mappa);
+}
+
+// ==========================================================================
+// Pioggia in movimento
+//
+// Una fotografia del radar dice se piove adesso; non dice da dove arriva ne'
+// dove sara' fra un'ora, che e' la domanda di chi deve decidere se uscire.
+// Quindi la pioggia si guarda scorrere, su una linea del tempo sola:
+//
+//   da -2 ore a +30 minuti   radar RainViewer, misurato, un fotogramma ogni
+//                            dieci minuti (il "nowcast" e' estrapolazione del
+//                            radar stesso, non un modello)
+//   da +1 a +24 ore          griglia oraria di Open-Meteo, scaricata in CI e
+//                            disegnata come campo continuo
+//
+// Le due meta' hanno natura diversa e la scritta lo dice: sopra c'e' cio' che
+// e' stato visto, sotto cio' che e' previsto. Spacciarle per la stessa cosa
+// sarebbe comodo e falso.
+// ==========================================================================
+
+/* Scala della pioggia in mm/h, sui colori del radar RainViewer: cosi' le due
+   meta' dell'animazione non cambiano lingua a meta' strada. */
+const RAIN_SCALA = [[0.1, [140, 214, 255]], [1, [61, 155, 214]],
+                    [4, [31, 95, 168]], [10, [140, 59, 168]], [25, [190, 40, 110]]];
+const RAIN_MS = 420;          // durata di un fotogramma
+const RAIN_PAUSA_FINE = 3;    // fotogrammi di sosta prima di ricominciare
+
+function coloreP(mm) {
+  if (mm <= RAIN_SCALA[0][0]) return RAIN_SCALA[0][1];
+  for (let i = 1; i < RAIN_SCALA.length; i++) {
+    const [x1, c1] = RAIN_SCALA[i - 1], [x2, c2] = RAIN_SCALA[i];
+    if (mm <= x2) {
+      const t = (mm - x1) / (x2 - x1);
+      return c1.map((c, j) => Math.round(c + (c2[j] - c) * t));
+    }
+  }
+  return RAIN_SCALA[RAIN_SCALA.length - 1][1];
+}
+
+const ROSA = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+              "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
+const rosa = (g) => ROSA[Math.round((((g % 360) + 360) % 360) / 22.5) % 16];
+
+let PIOGGIA = null;
+
+/** Costruisce la linea del tempo. Torna false se non c'e' niente da mostrare:
+ *  meglio dirlo che lasciare acceso uno strato vuoto. */
+async function preparaPioggia() {
+  const P = { frames: [], i: 0, timer: null, sosta: 0, corrente: null,
+              gruppo: L.layerGroup(), prev: null };
+
+  try {
+    const d = await (await fetch("https://api.rainviewer.com/public/weather-maps.json")).json();
+    for (const f of [...(d.radar?.past || []), ...(d.radar?.nowcast || [])]) {
+      // Il radar gratuito di RainViewer copre fino allo zoom 7: da 8 in su
+      // restituisce sempre la stessa immagine con scritto "Zoom Level Not
+      // Supported", che finiva dritta sulla mappa. Con maxNativeZoom Leaflet
+      // ingrandisce l'ultimo livello con dati veri: sgranato, ma la domanda a
+      // cui deve rispondere - sta piovendo sulla zona? - regge lo stesso.
+      P.frames.push({ t: f.time * 1000, misurato: true,
+                      url: `${d.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png` });
+    }
+  } catch (e) {
+    console.warn("radar non disponibile:", e.message);
+  }
+
+  try {
+    const pv = await carica("pioggia_prev");
+    P.prev = pv;
+    const ultimoRadar = P.frames.length ? P.frames[P.frames.length - 1].t : 0;
+    pv.ore.forEach((iso, k) => {
+      // Le ore sono UTC senza suffisso: senza la Z il browser le leggerebbe
+      // come ora locale e d'estate l'animazione salterebbe indietro di due ore.
+      const t = Date.parse(iso + "Z");
+      // Dove c'e' il radar il radar vince: e' misura, non previsione.
+      if (t > ultimoRadar) P.frames.push({ t, misurato: false, k });
+    });
+  } catch (e) {
+    console.warn("previsione di pioggia non disponibile:", e.message);
+  }
+
+  if (!P.frames.length) return false;
+  P.frames.sort((a, b) => a.t - b.t);
+
+  // Si parte da adesso, non da due ore fa: il primo sguardo deve rispondere
+  // "sta piovendo?", il resto lo racconta l'animazione.
+  const ora = Date.now();
+  const i0 = P.frames.findIndex((f) => f.t >= ora);
+  P.i = i0 < 0 ? P.frames.length - 1 : i0;
+
+  PIOGGIA = P;
+  stato.strati.pioggia = P.gruppo;
+
+  const sl = $("#rain-sl");
+  sl.max = String(P.frames.length - 1);
+  sl.value = String(P.i);
+  sl.addEventListener("input", () => { fermaTimer(); mostraFrame(+sl.value); });
+  $("#rain-play").addEventListener("click", () => (P.timer ? fermaTimer() : avviaTimer()));
+  return true;
+}
+
+function stratoFrame(f) {
+  if (f.layer) return f.layer;
+  if (f.url) {
+    f.layer = L.tileLayer(f.url, { opacity: 0, maxNativeZoom: 7, maxZoom: 19,
+                                   attribution: "Radar &copy; RainViewer" });
+  } else {
+    const g = PIOGGIA.prev, mm = g.mm[f.k], n = g.lon.length;
+    f.layer = campoOverlay(
+      g.lat, g.lon,
+      (iy, ix) => mm[iy * n + ix],
+      coloreP,
+      // Sotto il decimo di millimetro non e' pioggia, e' rumore del modello:
+      // colorarlo stenderebbe un velo azzurro su tutta la provincia.
+      (v) => (v < 0.1 ? 0 : Math.min(0.72, 0.2 + v * 0.35)),
+      480);
+    f.layer.setOpacity(0);
+  }
+  return f.layer;
+}
+
+function mostraFrame(i) {
+  const P = PIOGGIA;
+  if (!P) return;
+  P.i = ((i % P.frames.length) + P.frames.length) % P.frames.length;
+  const f = P.frames[P.i];
+
+  const l = stratoFrame(f);
+  if (!P.gruppo.hasLayer(l)) P.gruppo.addLayer(l);
+  if (P.corrente && P.corrente !== l) P.corrente.setOpacity(0);
+  l.setOpacity(f.misurato ? 0.68 : 0.62);
+  P.corrente = l;
+
+  const d = new Date(f.t);
+  const ore = d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  const dm = Math.round((f.t - Date.now()) / 60000);
+  const quando = Math.abs(dm) < 8 ? "adesso"
+    : dm < 0 ? `${-dm} min fa`
+    : dm < 90 ? `fra ${dm} min` : `fra ${Math.round(dm / 60)} h`;
+  $("#radar-ora").textContent =
+    `${ore} \u00b7 ${quando} \u00b7 ${f.misurato ? "radar" : "previsto"}`;
+  $("#rain-sl").value = String(P.i);
+
+  // "Verso dove va": il vento si misura da dove viene, quindi la direzione del
+  // moto e' l'opposta. Senza girarla la freccia indicherebbe il contrario.
+  const v = P.prev;
+  if (v?.vento_da?.length) {
+    const k = Math.min(v.vento_da.length - 1, Math.max(0,
+      Math.round((f.t - Date.parse(v.ore[0] + "Z")) / 3600000)));
+    $("#rain-vento").textContent =
+      `In arrivo da ${rosa(v.vento_da[k])}, si sposta verso `
+      + `${rosa(v.vento_da[k] + 180)} a ${v.vento_kmh[k]} km/h`;
+  }
+}
+
+function avviaTimer() {
+  const P = PIOGGIA;
+  if (!P || P.timer) return;
+  $("#rain-play").textContent = "\u275a\u275a";
+  P.timer = setInterval(() => {
+    // Sull'ultimo fotogramma si resta fermi un momento: senza la sosta il ciclo
+    // riparte cosi' in fretta che sembra uno sfarfallio.
+    if (P.i === P.frames.length - 1 && P.sosta < RAIN_PAUSA_FINE) { P.sosta++; return; }
+    P.sosta = 0;
+    mostraFrame(P.i + 1);
+  }, RAIN_MS);
+}
+
+function fermaTimer() {
+  const P = PIOGGIA;
+  if (!P?.timer) return;
+  clearInterval(P.timer);
+  P.timer = null;
+  $("#rain-play").textContent = "\u25b6";
+}
+
+function avviaPioggia() { mostraFrame(PIOGGIA?.i ?? 0); avviaTimer(); }
+
+/* Fermare il timer quando lo strato si spegne non e' pignoleria: un
+   setInterval che continua a scambiare opacita' su layer staccati dalla mappa
+   e' lavoro per il browser e batteria per chi guarda. */
+function fermaPioggia() { fermaTimer(); }
 
 /* Griglia nazionale di Meteo Funghi: 820 celle da 0,2 gradi su tutta Italia.
    Si costruisce solo alla prima accensione, perche' ottocento cerchi disegnati
@@ -556,100 +934,170 @@ async function disegnaSentieri() {
   }
 
   const gruppo = L.layerGroup();
+  SIGLE = [];
+
   for (const p of d.percorsi) {
     for (const linea of p.linee) {
-      // Il tracciato si spezza in tratti corti e a ciascuno si attacca la
-      // sigla: cosi' il numero si ripete lungo il percorso, come i segnavia
-      // veri, invece di comparire una volta sola a meta'.
-      // I tooltip li posiziona Leaflet: con i divIcon restavano tutti
-      // accatastati nell'angolo della mappa.
-      for (let k = 0; k < linea.length - 1; k += PUNTI_PER_SIGLA) {
-        const tratto = linea.slice(k, Math.min(k + PUNTI_PER_SIGLA + 1, linea.length));
-        if (tratto.length < 2) continue;
+      if (linea.length < 2) continue;
 
-        // Due passate: una chiara e spessa che fa da bordo, una rossa sopra.
-        // Senza il bordo, il rosso sparisce sul verde del bosco.
-        L.polyline(tratto, { color: "#ffffff", weight: 5, opacity: 0.75,
-                             lineCap: "round", interactive: false }).addTo(gruppo);
-        const l = L.polyline(tratto, { color: "#d3352b", weight: 2.4, opacity: 0.95,
-                                       dashArray: "7 5", lineCap: "round" }).addTo(gruppo);
+      // Una linea intera per tracciato, non un layer per tratto: prima erano
+      // due polilinee ogni settanta punti, cioe' centinaia di oggetti in piu'
+      // senza che si vedesse alcuna differenza.
+      // Due passate: bordo chiaro sotto, rosso sopra. Senza il bordo il rosso
+      // sparisce sul verde del bosco.
+      L.polyline(linea, { renderer: tela(), color: "#ffffff", weight: 5,
+                          opacity: 0.75, lineCap: "round",
+                          interactive: false }).addTo(gruppo);
+      L.polyline(linea, { renderer: tela(), color: "#d3352b", weight: 2.4,
+                          opacity: 0.95, dashArray: "7 5", lineCap: "round" })
+        .addTo(gruppo)
+        .bindPopup(`<b>${esc(p.ref || "")}</b><br>${esc(p.nome || "senza nome")}`);
 
-        // Un solo bindTooltip per layer: il secondo sostituisce il primo e la
-        // sigla permanente non veniva mai creata. Il nome per esteso passa
-        // nel popup, che e' un canale separato.
-        l.bindPopup(`<b>${esc(p.ref || "")}</b><br>${esc(p.nome || "senza nome")}`);
-        if (p.ref) {
-          l.bindTooltip(p.ref, {
-            permanent: true, direction: "center", className: "sent-sigla",
-          });
+      // Le posizioni delle sigle si calcolano una volta e si tengono da parte.
+      // I riquadri veri si creano solo per quelli che entrano nella vista.
+      if (p.ref) {
+        for (let k = Math.floor(PUNTI_PER_SIGLA / 2); k < linea.length;
+             k += PUNTI_PER_SIGLA) {
+          SIGLE.push({ ll: linea[k], ref: p.ref });
         }
       }
     }
   }
 
   stato.strati.sentieri = gruppo;
-  stato.mappa.on("zoomend", aggiornaSigle);
+  stato.strati.sigle = L.layerGroup();
+  stato.mappa.on("zoomend moveend", aggiornaSigle);
   aggiornaSigle();
 }
 
-/* Sotto un certo zoom le sigle si accavallano e non si legge piu' niente:
-   meglio nasconderle che stampare un groviglio. Si agisce sul contenitore
-   della mappa, cosi' vale anche per i tooltip creati dopo. */
+/* Le sigle si ricreano a ogni spostamento, ma solo per il pezzo di mappa che
+   si sta guardando e solo da un certo zoom in su. Tenerle tutte appese - piu'
+   di trecento - costava a ogni pan, e sotto lo zoom 13 non si leggevano
+   comunque perche' si accavallavano. */
 function aggiornaSigle() {
-  const mostra = stato.mappa.getZoom() >= ZOOM_SIGLE;
-  stato.mappa.getContainer().classList.toggle("senza-sigle", !mostra);
+  const g = stato.strati.sigle;
+  if (!g) return;
+  g.clearLayers();
+
+  if (stato.mappa.getZoom() < ZOOM_SIGLE) {
+    stato.mappa.removeLayer(g);
+    return;
+  }
+
+  const vista = stato.mappa.getBounds();
+  let n = 0;
+  for (const s of SIGLE) {
+    if (n >= MAX_SIGLE) break;
+    if (!vista.contains(s.ll)) continue;
+    L.marker(s.ll, {
+      interactive: false,
+      icon: L.divIcon({ className: "sent-sigla", html: `<span>${esc(s.ref)}</span>`,
+                        iconSize: null }),
+    }).addTo(g);
+    n++;
+  }
+
+  // Il gruppo delle sigle sta sulla mappa solo se ci sono i sentieri.
+  if (stato.mappa.hasLayer(stato.strati.sentieri)) g.addTo(stato.mappa);
+}
+
+/* Meteo Funghi come campo continuo, non come pallini.
+ *
+ * La griglia e' regolare, 0,2 gradi: il modo giusto di renderla e'
+ * interpolarla, non disegnare un cerchio per cella. Ottocentoventi pallini
+ * dicono "ecco dove ho misurato"; una macchia sfumata dice "ecco dove
+ * crescono", che e' la domanda vera.
+ *
+ * Niente libreria di heatmap: quelle stimano una densita' di punti, mentre
+ * qui il valore e' gia' dato su una griglia. Si disegna a mano con
+ * interpolazione bilineare e si appoggia come immagine sulla mappa.
+ */
+function campoOverlay(lats, lons, val, colore, alfa, W = 640) {
+  const latMin = lats[0], latMax = lats[lats.length - 1];
+  const lonMin = lons[0], lonMax = lons[lons.length - 1];
+
+  // Si lavora in Mercatore, non in gradi: su parecchi gradi di latitudine
+  // stirare l'immagine linearmente sposterebbe le macchie di chilometri
+  // rispetto alla mappa sotto.
+  const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
+  const invMerc = (y) => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+  const yTop = merc(latMax), yBot = merc(latMin);
+  const H = Math.max(1, Math.round(W * (yTop - yBot) / ((lonMax - lonMin) * Math.PI / 180)));
+
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const img = ctx.createImageData(W, H);
+
+  for (let py = 0; py < H; py++) {
+    const lat = invMerc(yTop - (yTop - yBot) * (py + 0.5) / H);
+    const fy = (lat - latMin) / (latMax - latMin) * (lats.length - 1);
+    const iy = Math.min(lats.length - 2, Math.max(0, Math.floor(fy)));
+    const ty = Math.min(1, Math.max(0, fy - iy));
+
+    for (let px = 0; px < W; px++) {
+      const lon = lonMin + (lonMax - lonMin) * (px + 0.5) / W;
+      const fx = (lon - lonMin) / (lonMax - lonMin) * (lons.length - 1);
+      const ix = Math.min(lons.length - 2, Math.max(0, Math.floor(fx)));
+      const tx = Math.min(1, Math.max(0, fx - ix));
+
+      // Fuori dalla terraferma la griglia ha buchi: se manca anche un solo
+      // angolo la cella resta trasparente, invece di inventare un valore.
+      const a = val(iy, ix), b = val(iy, ix + 1),
+            c = val(iy + 1, ix), e = val(iy + 1, ix + 1);
+      const o = (py * W + px) * 4;
+      if (a == null || b == null || c == null || e == null) continue;
+
+      const v = (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + e * tx) * ty;
+      const op = alfa(v);
+      if (op <= 0) continue;
+      const [r, g, bl] = colore(v);
+      img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = bl;
+      img.data[o + 3] = Math.round(255 * Math.min(1, op));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  return L.imageOverlay(cv.toDataURL("image/png"),
+    [[latMin, lonMin], [latMax, lonMax]], { opacity: 1, interactive: false });
 }
 
 function disegnaMF() {
   const mf = stato.dati.mf;
   if (!mf || !mf.punti) return;
-  stato.strati.mf = L.layerGroup(mf.punti.map((p) => L.circleMarker([p.lat, p.lon], {
-    radius: 7, weight: 0,
-    fillOpacity: p.q < 1 ? 0.35 : 0.75,
-    fillColor: coloreQ(p.q),
-  }).bindPopup(`<b>Meteo Funghi</b><br>`
-    + `<span class="pop-q" style="color:${coloreQ(p.q)}">`
-    + `${p.q.toFixed(1).replace(".", ",")}</span> su 10`)));
+
+  const lats = [...new Set(mf.punti.map((p) => p.lat))].sort((a, b) => a - b);
+  const lons = [...new Set(mf.punti.map((p) => p.lon))].sort((a, b) => a - b);
+  const q = new Map(mf.punti.map((p) => [`${p.lat}|${p.lon}`, p.q]));
+
+  stato.strati.mf = campoOverlay(
+    lats, lons,
+    (iy, ix) => q.get(`${lats[iy]}|${lons[ix]}`) ?? null,
+    coloreQrgb,
+    // I valori bassi sfumano invece di stendere un velo grigio su mezza
+    // Italia: sotto l'1 non c'e' niente da segnalare.
+    (v) => Math.min(1, Math.max(0, (v - 0.6) / 3)) * 0.72);
 }
 
 function disegnaCrescita() {
   if (stato.strati.crescita) stato.mappa.removeLayer(stato.strati.crescita);
-  const marcatori = stato.dati.spots.map((s) => {
-    const o = s.specie[stato.specie].oggi, q = o?.q ?? 0;
-    // Il raggio non parte da zero e il bordo c'e' sempre: con la siccita'
-    // il punteggio e' 0 e il colore diventa grigio, che sopra il verde dello
-    // strato boschi sparisce del tutto. Un marcatore che non si vede non
-    // dice "punteggio basso", dice "guasto".
-    const mk = L.circleMarker([s.lat, s.lon], {
-      radius: 10 + q * 0.9,
-      weight: s.id === stato.spot.id ? 4 : 2.5,
-      className: s.id === stato.spot.id ? "mk mk-sel" : "mk",
-      fillOpacity: 0.95, fillColor: coloreQ(q),
-    }).bindPopup(`<b>${esc(s.nome)}</b><br>${Math.round(s.quota_dem)} m · ${esc(s.bosco)}<br>
-      <span class="pop-q" style="color:${coloreQ(q)}">${q.toFixed(1).replace(".", ",")}</span> su 10
-      — ${esc(o?.etichetta || "")}`);
-    mk.on("click", () => {
-      stato.spot = s; $("#sel-spot").value = s.id; renderPrevisione(); disegnaCrescita();
-    });
-    return mk;
-  });
 
   const st = stato.dati.stazione;
-  if (st) marcatori.push(L.marker([st.lat, st.lon]).bindPopup(
-    `<b>${esc(st.nome)}</b><br>Stazione al suolo · ${st.quota} m<br>
-     ${st.temp ?? "?"} °C · ${st.umidita ?? "?"}% · pioggia mese ${st.pioggia_mese ?? "?"} mm`));
+  if (!st) { stato.strati.crescita = null; return; }
 
-  stato.strati.crescita = L.layerGroup(marcatori);
-  if ($('#pannello .sw[data-strato="crescita"]').checked)
-    stato.strati.crescita.addTo(stato.mappa);
+  stato.strati.crescita = L.layerGroup([
+    L.marker([st.lat, st.lon]).bindPopup(
+      `<b>${esc(st.nome)}</b><br>Stazione al suolo · ${st.quota} m<br>
+       ${st.temp ?? "?"} °C · ${st.umidita ?? "?"}% · pioggia mese ${st.pioggia_mese ?? "?"} mm`),
+  ]);
+
+  const sw = $('#pannello .sw[data-strato="crescita"]');
+  if (sw && sw.checked) stato.strati.crescita.addTo(stato.mappa);
 }
 
 /* Legenda: mostra solo gli strati accesi, e per ognuno la sua scala. Una
    legenda fissa che spiega cose spente confonde piu' di quanto aiuti. */
 const LEGENDA = {
-  crescita: () => `<b>Crescita</b>
-    <div class="lg-barra"></div>
-    <div class="lg-estremi"><span>0 · irrilevante</span><span>10 · molto favorevole</span></div>`,
   boschi: () => `<b>Copertura del suolo</b>
     <div class="lg-voci">${[
       ["#80ff00", "Bosco di latifoglie"],
@@ -662,11 +1110,20 @@ const LEGENDA = {
       ["#e6004d", "Area urbana"],
     ].map(([c, n]) => `<span class="lg-v"><i style="background:${c}"></i>${n}</span>`).join("")}</div>
     <small>Corine Land Cover 2018, celle da 100 m</small>`,
-  pioggia: () => `<b>Radar pioggia</b>
-    <div class="lg-voci">${[
-      ["#8cd6ff", "debole"], ["#3d9bd6", "moderata"],
-      ["#1f5fa8", "forte"], ["#8c3ba8", "molto forte"],
-    ].map(([c, n]) => `<span class="lg-v"><i style="background:${c}"></i>${n}</span>`).join("")}</div>`,
+  pioggia: () => `<b>Pioggia</b>
+    <div class="lg-voci">${RAIN_SCALA.map(([mm, c]) =>
+      `<span class="lg-v"><i style="background:rgb(${c.join(",")})"></i>${
+        String(mm).replace(".", ",")} mm/h</span>`).join("")}</div>
+    <small>Fino a +30 minuti e' radar misurato, dopo e' modello previsto</small>`,
+  confine: () => `<b>Confine del Parco</b>
+    <div class="lg-voci"><span class="lg-v"><i style="background:#15803d"></i>
+      Perimetro dell'area protetta</span></div>`,
+  crescita: () => `<b>Stazione al suolo</b>
+    <div class="lg-voci"><span class="lg-v"><i style="background:#3388ff"></i>
+      Monte Livata, misure vere</span></div>`,
+  mf: () => `<b>Meteo Funghi</b>
+    <div class="lg-barra"></div>
+    <div class="lg-estremi"><span>0 &middot; irrilevante</span><span>10 &middot; molto favorevole</span></div>`,
 };
 
 function aggiornaFonteMappa() {
@@ -674,7 +1131,9 @@ function aggiornaFonteMappa() {
 
   const corpo = accesi.filter((k) => LEGENDA[k]).map((k) => `<div class="lg-b">${LEGENDA[k]()}</div>`).join("");
   const leg = $("#legenda-corpo");
-  leg.innerHTML = corpo || `<p class="muted small" style="margin:0">Nessuno strato attivo.</p>`;
+  leg.innerHTML = corpo
+    || `<p class="muted small" style="margin:0">Niente da spiegare: gli strati
+        accesi non hanno una scala di colori.</p>`;
   $(".mappa-legenda").hidden = false;
 
   const nomi = accesi.map((k) => $(`#pannello .sw[data-strato="${k}"]`)
@@ -991,6 +1450,7 @@ function renderMeteo() {
    scaricato in CI per il modello, con in piu' codice del tempo, probabilita'
    di pioggia e raffiche. La tabella dei codici sta in meteo.js e si carica
    solo quando si apre la scheda. */
+let SIGLE = [];   // posizioni gia' calcolate delle sigle dei sentieri
 let MET = null;
 
 async function caricaMeteoLib() {

@@ -1,0 +1,897 @@
+{
+ "categorie": {
+  "arrampicata": {
+   "nome": "Arrampicata",
+   "icona": "🧗"
+  },
+  "maneggi": {
+   "nome": "Maneggi",
+   "icona": "🐎"
+  },
+  "bike": {
+   "nome": "Noleggio bici ed e-bike",
+   "icona": "🚲"
+  },
+  "neve": {
+   "nome": "Noleggio ciaspole e sci",
+   "icona": "🎿"
+  },
+  "scuolesci": {
+   "nome": "Scuole di sci e snowboard",
+   "icona": "⛷"
+  },
+  "tennis": {
+   "nome": "Campi da tennis",
+   "icona": "🎾"
+  },
+  "piscine": {
+   "nome": "Piscine",
+   "icona": "🏊"
+  },
+  "navette": {
+   "nome": "Servizio navetta",
+   "icona": "🚌"
+  },
+  "calcetto": {
+   "nome": "Calcetto",
+   "icona": "⚽"
+  },
+  "avventura": {
+   "nome": "Parco avventura",
+   "icona": "🌲"
+  },
+  "golf": {
+   "nome": "Golf",
+   "icona": "⛳"
+  },
+  "circoli": {
+   "nome": "Circoli sportivi",
+   "icona": "🏓"
+  },
+  "benessere": {
+   "nome": "Centri benessere",
+   "icona": "💆"
+  }
+ },
+ "servizi": [
+  {
+   "nome": "Vivere l'Aniene",
+   "cat": "arrampicata",
+   "tel": [
+    "320 9681006"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Rifugio Viperella",
+   "cat": "arrampicata",
+   "tel": [
+    "347 1665470"
+   ],
+   "email": null,
+   "indirizzo": "Rifugio Viperella, Campo Staffi, Filettino FR",
+   "zona": "Campo Staffi, Filettino FR",
+   "note": "",
+   "lat": 41.922379,
+   "lon": 13.340543,
+   "precisione": "esatta"
+  },
+  {
+   "nome": "Family Ranch Subiaco",
+   "cat": "maneggi",
+   "tel": [
+    "3477 316443"
+   ],
+   "email": "familyranchsubiaco@gmail.com",
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Ippico Monte Livata",
+   "cat": "maneggi",
+   "tel": [
+    "348 4504084"
+   ],
+   "email": "centroippicolivata@libero.it",
+   "indirizzo": null,
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Maneggio Campaegli",
+   "cat": "maneggi",
+   "tel": [
+    "347 8280689"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Campaegli, Cervara di Roma RM",
+   "note": "Valerio",
+   "lat": 41.971553,
+   "lon": 13.107165,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Maneggio EquiRanch Campo Staffi",
+   "cat": "maneggi",
+   "tel": [
+    "348 4835759"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Campo Staffi, Filettino FR",
+   "note": "",
+   "lat": 41.923075,
+   "lon": 13.339387,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Equestre S. Giorgio",
+   "cat": "maneggi",
+   "tel": [
+    "0775 599751"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Altipiani di Arcinazzo, Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.849851,
+   "lon": 13.190573,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Ippico Vallenoce",
+   "cat": "maneggi",
+   "tel": [
+    "349 1232450"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Pereto AQ",
+   "note": "",
+   "lat": 42.057815,
+   "lon": 13.101625,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Ippico Rocca di Botte",
+   "cat": "maneggi",
+   "tel": [
+    "347 5783844"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Rocca di Botte AQ",
+   "note": "",
+   "lat": 42.026225,
+   "lon": 13.067688,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Ippico Oricola",
+   "cat": "maneggi",
+   "tel": [
+    "348 7057588"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Oricola AQ",
+   "note": "Ilaria Fiori",
+   "lat": 42.063667,
+   "lon": 13.045428,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Ostello Colle Mordani",
+   "cat": "maneggi",
+   "tel": [
+    "328 7208972"
+   ],
+   "email": "info@collemordani.it",
+   "indirizzo": "SP28 Via Rio Suria, Trevi nel Lazio FR",
+   "zona": "Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.862959,
+   "lon": 13.246313,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Probike Subiaco",
+   "cat": "bike",
+   "tel": [
+    "334 5851967"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Campaegli Resort",
+   "cat": "bike",
+   "tel": [
+    "379 2846074"
+   ],
+   "email": null,
+   "indirizzo": "Via dell'Orsetto Lavatore, Campaegli, Cervara di Roma RM",
+   "zona": "Campaegli, Cervara di Roma RM",
+   "note": "Carmen · e-bike senza guida",
+   "lat": 41.969089,
+   "lon": 13.111008,
+   "precisione": "esatta"
+  },
+  {
+   "nome": "Diego Checchi 2001",
+   "cat": "bike",
+   "tel": [
+    "349 3652252"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "e-bike con guida",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Rete d'impresa We_Net",
+   "cat": "bike",
+   "tel": [
+    "0774 85050"
+   ],
+   "email": "info@subiacoturismo.it",
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Livata Escursioni",
+   "cat": "bike",
+   "tel": [
+    "327 1289899"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "Lupi Lorenzo",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Luca Terrinoni",
+   "cat": "bike",
+   "tel": [
+    "339 2735653"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Altipiani di Arcinazzo, Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.849851,
+   "lon": 13.190573,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Ostello Colle Mordani",
+   "cat": "bike",
+   "tel": [
+    "328 7208972"
+   ],
+   "email": "info@collemordani.it",
+   "indirizzo": "SP28 Via Rio Suria, Trevi nel Lazio FR",
+   "zona": "Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.862959,
+   "lon": 13.246313,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Orzella Sport",
+   "cat": "neve",
+   "tel": [
+    "0774 826055"
+   ],
+   "email": null,
+   "indirizzo": "Viale dei Boschi 24, Monte Livata, Subiaco RM",
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Noleggio Livata Simona Sport",
+   "cat": "neve",
+   "tel": [
+    "347 5039194"
+   ],
+   "email": null,
+   "indirizzo": "Piazzale Campo dell'Osso, Subiaco RM",
+   "zona": "Campo dell'Osso, Subiaco RM",
+   "note": "",
+   "lat": 41.948126,
+   "lon": 13.166525,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Genziana Campo Staffi",
+   "cat": "neve",
+   "tel": [
+    "339 1940288"
+   ],
+   "email": "genziana.campostaffi@tiscali.it",
+   "indirizzo": null,
+   "zona": "Campo Staffi, Filettino FR",
+   "note": "",
+   "lat": 41.923075,
+   "lon": 13.339387,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Rifugio Viperella",
+   "cat": "neve",
+   "tel": [
+    "347 1665470"
+   ],
+   "email": null,
+   "indirizzo": "Rifugio Viperella, Campo Staffi, Filettino FR",
+   "zona": "Campo Staffi, Filettino FR",
+   "note": "",
+   "lat": 41.922379,
+   "lon": 13.340543,
+   "precisione": "esatta"
+  },
+  {
+   "nome": "Scuola sci e snowboard Livata",
+   "cat": "scuolesci",
+   "tel": [
+    "389 6496028",
+    "328 6930432",
+    "389 6882024"
+   ],
+   "email": null,
+   "indirizzo": "Viale dei Boschi 13, Monte Livata, Subiaco RM",
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Scuole Sci Monte Livata",
+   "cat": "scuolesci",
+   "tel": [
+    "393 0717820"
+   ],
+   "email": "scuolascilivata@gmail.com",
+   "indirizzo": null,
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "segreteria",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Scuole Sci Campo Staffi",
+   "cat": "scuolesci",
+   "tel": [
+    "392 2372416"
+   ],
+   "email": "santucci.francesco@ymail.com",
+   "indirizzo": null,
+   "zona": "Campo Staffi, Filettino FR",
+   "note": "",
+   "lat": 41.923075,
+   "lon": 13.339387,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Baita Capriati",
+   "cat": "scuolesci",
+   "tel": [
+    "348 8133461"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Campo Staffi, Filettino FR",
+   "note": "",
+   "lat": 41.923075,
+   "lon": 13.339387,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Livata 2001 – Area sportiva dell'Anello",
+   "cat": "tennis",
+   "tel": [
+    "324 8626357"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Comune di Vallepietra",
+   "cat": "tennis",
+   "tel": [
+    "0774 899031"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Vallepietra RM",
+   "note": "",
+   "lat": 41.926989,
+   "lon": 13.230666,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Comune di Jenne",
+   "cat": "tennis",
+   "tel": [
+    "0774 827601"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Jenne RM",
+   "note": "",
+   "lat": 41.888823,
+   "lon": 13.169593,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Villaggio Val Granara",
+   "cat": "tennis",
+   "tel": [],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Filettino FR",
+   "note": "",
+   "lat": 41.891424,
+   "lon": 13.327496,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Villaggio Conifere Garden",
+   "cat": "tennis",
+   "tel": [],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Filettino FR",
+   "note": "",
+   "lat": 41.891424,
+   "lon": 13.327496,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Tennis Club Altipiani",
+   "cat": "tennis",
+   "tel": [
+    "339 5476515"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Altipiani di Arcinazzo, Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.849851,
+   "lon": 13.190573,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Sportivo Le Sequoie",
+   "cat": "tennis",
+   "tel": [
+    "0863 997961"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Carsoli AQ",
+   "note": "",
+   "lat": 42.122721,
+   "lon": 13.101755,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Giardino del Ponte",
+   "cat": "tennis",
+   "tel": [
+    "0774 83860",
+    "327 8357053"
+   ],
+   "email": null,
+   "indirizzo": "Corso Cesare Battisti 39, Subiaco RM",
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Ostello Il Lescuso",
+   "cat": "piscine",
+   "tel": [
+    "351 7866493"
+   ],
+   "email": null,
+   "indirizzo": "Strada Provinciale 45a km 12.5, Jenne RM",
+   "zona": "Jenne RM",
+   "note": "",
+   "lat": 41.888823,
+   "lon": 13.169593,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Villaggio Conifere Garden",
+   "cat": "piscine",
+   "tel": [],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Filettino FR",
+   "note": "",
+   "lat": 41.891424,
+   "lon": 13.327496,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Villaggio Val Granara",
+   "cat": "piscine",
+   "tel": [],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Filettino FR",
+   "note": "",
+   "lat": 41.891424,
+   "lon": 13.327496,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Nuoto Fiuggi",
+   "cat": "piscine",
+   "tel": [
+    "0775 504336"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Fiuggi FR",
+   "note": "",
+   "lat": 41.798561,
+   "lon": 13.220489,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Club della Piscina",
+   "cat": "piscine",
+   "tel": [
+    "366 508299"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Rocca di Botte AQ",
+   "note": "piscina e beach volley",
+   "lat": 42.026225,
+   "lon": 13.067688,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Piscina Casale del Colonnello",
+   "cat": "piscine",
+   "tel": [
+    "339 1995136",
+    "328 0264604"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Carsoli AQ",
+   "note": "",
+   "lat": 42.122721,
+   "lon": 13.101755,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Piscina AgriQuartuccio",
+   "cat": "piscine",
+   "tel": [],
+   "email": null,
+   "indirizzo": "Strada Provinciale del Cavaliere, Oricola AQ",
+   "zona": "Oricola AQ",
+   "note": "Azienda agricola F. De Santis",
+   "lat": 42.063141,
+   "lon": 13.044657,
+   "precisione": "esatta"
+  },
+  {
+   "nome": "SSD Sublacensis",
+   "cat": "piscine",
+   "tel": [
+    "0774 504539"
+   ],
+   "email": null,
+   "indirizzo": "Via G. Scarpellini, Subiaco RM",
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Onorati Group",
+   "cat": "navette",
+   "tel": [
+    "06 9349771",
+    "0775 581832",
+    "0775 527001"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "COTRAL",
+   "cat": "navette",
+   "tel": [
+    "06 72057205"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "ATL",
+   "cat": "navette",
+   "tel": [
+    "0775 581832",
+    "0775 527001"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.862959,
+   "lon": 13.246313,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Navetta Subiaco – Rocca Santo Stefano",
+   "cat": "navette",
+   "tel": [
+    "0774 8161"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Navetta Monasteri e Laghetto San Benedetto",
+   "cat": "navette",
+   "tel": [
+    "342 1938078"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "servizio ETHA",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Ostello Il Lescuso",
+   "cat": "calcetto",
+   "tel": [
+    "333 2206949"
+   ],
+   "email": null,
+   "indirizzo": "Strada Provinciale 45a km 12.5, Jenne RM",
+   "zona": "Jenne RM",
+   "note": "",
+   "lat": 41.888823,
+   "lon": 13.169593,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Giardino del Ponte",
+   "cat": "calcetto",
+   "tel": [
+    "0774 83860",
+    "327 8357053"
+   ],
+   "email": null,
+   "indirizzo": "Corso Cesare Battisti 39, Subiaco RM",
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Anello di Livata – Livata 2001",
+   "cat": "calcetto",
+   "tel": [
+    "324 8626357"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Comune di Vallepietra",
+   "cat": "calcetto",
+   "tel": [
+    "0774 899031"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Vallepietra RM",
+   "note": "",
+   "lat": 41.926989,
+   "lon": 13.230666,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Centro Sportivo Le Sequoie",
+   "cat": "calcetto",
+   "tel": [
+    "0863 997961"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Carsoli AQ",
+   "note": "",
+   "lat": 42.122721,
+   "lon": 13.101755,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Altipiani Adventures Park",
+   "cat": "avventura",
+   "tel": [
+    "331 3493696"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Altipiani di Arcinazzo, Trevi nel Lazio FR",
+   "note": "",
+   "lat": 41.849851,
+   "lon": 13.190573,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Parco degli Angeli",
+   "cat": "avventura",
+   "tel": [
+    "0774 85690"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Subiaco RM",
+   "note": "",
+   "lat": 41.926715,
+   "lon": 13.094432,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Parco Avventura Casale del Colonnello",
+   "cat": "avventura",
+   "tel": [
+    "339 1995136",
+    "328 0264604"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Carsoli AQ",
+   "note": "",
+   "lat": 42.122721,
+   "lon": 13.101755,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Fiuggi Golf Club",
+   "cat": "golf",
+   "tel": [
+    "0775 515250"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Fiuggi FR",
+   "note": "",
+   "lat": 41.798561,
+   "lon": 13.220489,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Golf Fiuggi Terme & Country Club",
+   "cat": "golf",
+   "tel": [
+    "0775 515640"
+   ],
+   "email": null,
+   "indirizzo": null,
+   "zona": "Fiuggi FR",
+   "note": "",
+   "lat": 41.798561,
+   "lon": 13.220489,
+   "precisione": "localita"
+  },
+  {
+   "nome": "CH Relais & Sport Club",
+   "cat": "circoli",
+   "tel": [
+    "351 7725332"
+   ],
+   "email": "info@chclub.com",
+   "indirizzo": null,
+   "zona": "Altipiani di Arcinazzo, Trevi nel Lazio FR",
+   "note": "Al coperto: biliardino, biliardo, ping pong. All'aperto: tennis, padel, calcetto, bubble soccer, gabbia a 3",
+   "lat": 41.849851,
+   "lon": 13.190573,
+   "precisione": "localita"
+  },
+  {
+   "nome": "Campaegli Resort",
+   "cat": "benessere",
+   "tel": [
+    "379 2846074"
+   ],
+   "email": "resortcampaegli@libero.it",
+   "indirizzo": "Via dell'Orsetto Lavatore, Campaegli, Cervara di Roma RM",
+   "zona": "Campaegli, Cervara di Roma RM",
+   "note": "Piscina interna ed esterna, sauna, solarium",
+   "lat": 41.969089,
+   "lon": 13.111008,
+   "precisione": "esatta"
+  },
+  {
+   "nome": "Hotel Livata Mountain Wellness",
+   "cat": "benessere",
+   "tel": [
+    "0774 922000"
+   ],
+   "email": "reservation@livatahotel.it",
+   "indirizzo": "Viale dei Boschi 24, Monte Livata, Subiaco RM",
+   "zona": "Monte Livata, Subiaco RM",
+   "note": "SPA con piscina riscaldata, sauna, hammam, percorso Kneipp",
+   "lat": 41.939776,
+   "lon": 13.146578,
+   "precisione": "localita"
+  }
+ ]
+}

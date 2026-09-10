@@ -372,6 +372,72 @@ def bias_pioggia(daily, stazione, oggi):
 # Open-Meteo
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# Pioggia prevista, su griglia
+#
+# Il radar dice dov'e' la pioggia adesso e, con il nowcast, dove sara' fra
+# mezz'ora. Oltre serve un modello. Questa griglia e' quella che sulla mappa
+# fa scorrere le ore successive: senza, l'animazione si fermerebbe a +30
+# minuti e non risponderebbe alla domanda vera ("domani mattina piove?").
+#
+# Passo 0,1 gradi, circa 8 km in latitudine: piu' fitto sarebbe finto, perche'
+# i modelli globali disponibili gratuitamente non risolvono meglio di cosi'.
+# --------------------------------------------------------------------------
+
+GRIGLIA_PIOGGIA = (41.6, 42.3, 12.6, 13.6, 0.10)   # lat0, lat1, lon0, lon1, passo
+ORE_PREVISIONE = 24
+
+
+def fetch_pioggia_prev():
+    lat0, lat1, lon0, lon1, passo = GRIGLIA_PIOGGIA
+    lats = [round(lat0 + passo * i, 2)
+            for i in range(int(round((lat1 - lat0) / passo)) + 1)]
+    lons = [round(lon0 + passo * j, 2)
+            for j in range(int(round((lon1 - lon0) / passo)) + 1)]
+    pts = [(a, b) for a in lats for b in lons]
+
+    q = urllib.parse.urlencode({
+        "latitude": ",".join(str(a) for a, _ in pts),
+        "longitude": ",".join(str(b) for _, b in pts),
+        "hourly": "precipitation,wind_speed_10m,wind_direction_10m",
+        # UTC e non Europe/Rome: il browser sa convertire, e un fuso scritto a
+        # meta' strada e' il modo classico per sbagliare di due ore in estate.
+        "timezone": "UTC",
+        "forecast_hours": ORE_PREVISIONE,
+    })
+    raw = json.loads(_get(f"{OPENMETEO}?{q}", timeout=120).decode())
+    if not isinstance(raw, list):
+        raw = [raw]
+    if len(raw) != len(pts):
+        raise RuntimeError(f"attesi {len(pts)} punti, tornati {len(raw)}")
+
+    ore = raw[0]["hourly"]["time"]
+    # L'ordine e' lat-maggiore: il disegno sulla mappa legge mm[t][iy*nlon+ix],
+    # e se qui cambiasse l'ordine la pioggia finirebbe trasposta.
+    mm = [[round(raw[p]["hourly"]["precipitation"][t] or 0.0, 1)
+           for p in range(len(pts))] for t in range(len(ore))]
+
+    # Il vento serve a dire "verso dove va": si prende al centro della griglia,
+    # che cade sui Simbruini.
+    c = (len(lats) // 2) * len(lons) + len(lons) // 2
+    return {
+        "lat": lats, "lon": lons, "ore": ore, "mm": mm,
+        "vento_kmh": [round(v or 0) for v in raw[c]["hourly"]["wind_speed_10m"]],
+        "vento_da": [round(v or 0) for v in raw[c]["hourly"]["wind_direction_10m"]],
+    }
+
+
+def verifica_ordine_griglia():
+    """La mappa legge la griglia come mm[t][iy * nlon + ix]. Se un giorno
+    qualcuno riordinasse i punti qui sopra, la pioggia comparirebbe ruotata e
+    nessuno se ne accorgerebbe subito: meglio inchiodare il contratto."""
+    lats, lons = [1, 2], [10, 20, 30]
+    pts = [(a, b) for a in lats for b in lons]
+    for iy, a in enumerate(lats):
+        for ix, b in enumerate(lons):
+            assert pts[iy * len(lons) + ix] == (a, b)
+
+
 def fetch_openmeteo(spots):
     """Una sola chiamata per tutti i punti: l'endpoint accetta liste di
     coordinate e risponde con un array nello stesso ordine."""
@@ -749,6 +815,17 @@ def main():
         return 1  # senza meteo non c'e' sito: fallisci la build
 
     try:
+        pv = fetch_pioggia_prev()
+        _write("pioggia_prev.json", pv)
+        meta["sorgenti"]["pioggia_prev"] = {
+            "stato": "ok", "celle": len(pv["lat"]) * len(pv["lon"]),
+            "ore": len(pv["ore"]), "da": pv["ore"][0], "a": pv["ore"][-1],
+        }
+    except Exception as e:
+        meta["sorgenti"]["pioggia_prev"] = {"stato": "errore", "messaggio": str(e)}
+        print(f"[warn] pioggia prevista: {e}", file=sys.stderr)
+
+    try:
         cams = build_webcam(adesso)
         _write("webcam.json", {"controllate": adesso.isoformat(timespec="seconds"),
                                "ore_soglia": CAM_ORE_VIVA, "cam": cams})
@@ -863,6 +940,7 @@ def verifica_sri():
 def selftest():
     verifica_csp()
     verifica_sri()
+    verifica_ordine_griglia()
 
     """Controlli sulla correzione di bias: e' l'unico punto dove i dati
     vengono riscritti, quindi e' l'unico che merita una rete."""

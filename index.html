@@ -188,6 +188,11 @@
             aria-label="Mostra o nascondi gli strati" title="Strati">&#8801;</button>
 
     <aside id="pannello" class="pannello">
+      <div class="pannello-cap">
+        <span>Strati e luoghi</span>
+        <button id="pannello-chiudi" class="pannello-chiudi" type="button"
+                aria-label="Chiudi il pannello">&times;</button>
+      </div>
       <div class="strato">
         <label class="strato-cap">
           <span class="strato-nome"><i>&#127795;</i> Boschi</span>
@@ -214,22 +219,39 @@
 
       <div class="strato">
         <label class="strato-cap">
-          <span class="strato-nome"><i>&#127783;</i> Pioggia</span>
-          <input type="checkbox" class="sw" data-strato="pioggia">
+          <span class="strato-nome"><i>&#128506;</i> Confine del Parco</span>
+          <input type="checkbox" class="sw" data-strato="confine">
         </label>
         <div class="strato-corpo">
-          <span class="strato-et">Radar, ultimo passaggio &middot; risoluzione ~1 km, si sgrana ingrandendo</span>
-          <div id="radar-ora" class="chip">&mdash;</div>
+          <span class="strato-et">Perimetro dell'area protetta, da OpenStreetMap</span>
         </div>
       </div>
 
       <div class="strato">
         <label class="strato-cap">
-          <span class="strato-nome"><i>&#127812;</i> Crescita</span>
+          <span class="strato-nome"><i>&#127783;</i> Pioggia</span>
+          <input type="checkbox" class="sw" data-strato="pioggia">
+        </label>
+        <div class="strato-corpo">
+          <span class="strato-et">Misurata dal radar fino a +30 minuti, poi prevista dal modello fino a +24 ore</span>
+          <div class="rain-riga">
+            <button id="rain-play" class="rain-play" type="button"
+                    aria-label="Avvia o ferma l'animazione">&#9654;</button>
+            <input id="rain-sl" class="rain-sl" type="range" min="0" max="0" value="0"
+                   aria-label="Momento mostrato">
+          </div>
+          <div id="radar-ora" class="chip">&mdash;</div>
+          <span id="rain-vento" class="strato-et"></span>
+        </div>
+      </div>
+
+      <div class="strato">
+        <label class="strato-cap">
+          <span class="strato-nome"><i>&#127777;</i> Stazione</span>
           <input type="checkbox" class="sw" data-strato="crescita" checked>
         </label>
         <div class="strato-corpo">
-          <span class="strato-et">Modello a otto fattori, le tue zone</span>
+          <span class="strato-et">Monte Livata, Centro Visite &middot; misure reali</span>
         </div>
       </div>
 
@@ -240,6 +262,13 @@
         </label>
         <div class="strato-corpo">
           <span class="strato-et">Griglia nazionale, celle da 0,2&deg;</span>
+        </div>
+      </div>
+
+      <div class="strato strato-poi">
+        <span class="strato-et">Cosa c'&egrave; sulla mappa</span>
+        <div id="poi-griglia" class="poi-griglia">
+          <p class="muted small">Caricamento&hellip;</p>
         </div>
       </div>
 
