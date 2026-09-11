@@ -186,7 +186,6 @@ a { color: var(--accent); }
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   min-height: 100dvh;
-  overflow-x: clip;
 }
 
 .rail {
@@ -257,7 +256,7 @@ a { color: var(--accent); }
     position: fixed; bottom: 0; left: 0; right: 0; top: auto;
     height: auto; z-index: 600;
     flex-direction: row; gap: 0.2rem;
-    padding: 0.4rem 0.5rem;
+    padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
     border-right: 0; border-top: 1px solid var(--line);
     overflow-x: auto; scrollbar-width: none;
     background: color-mix(in srgb, var(--card) 95%, transparent);
@@ -275,11 +274,15 @@ a { color: var(--accent); }
     border-left: 1px solid var(--line);
   }
   .rail-piede .user { display: none; }
-  body { padding-bottom: 4.2rem; }
+  body { padding-bottom: calc(4.2rem + env(safe-area-inset-bottom, 0px)); }
 }
 
+/* Il taglio orizzontale sta qui e non sul guscio: nel guscio c'e' anche la
+   barra di navigazione, che sul telefono e' fissa in fondo allo schermo, e un
+   antenato che ritaglia puo' farla sparire mentre si scorre. Il contenuto che
+   rischia di sforare e' tutto dentro main. */
 main { max-width: 940px; margin: 0 auto; padding: 1.6rem 1.25rem 3rem;
-       width: 100%; min-width: 0; }
+       width: 100%; min-width: 0; overflow-x: clip; }
 .view { min-width: 0; }
 
 .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
@@ -438,7 +441,8 @@ select {
   max-height: calc(100% - 1.5rem);
   overflow-y: auto;
   display: grid; gap: 0.5rem;
-  padding: 0.5rem;
+  /* In alto si lascia posto al pulsante degli strati, che gli sta sopra. */
+  padding: 3rem 0.5rem 0.5rem;
   background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(12px);
   border: 1px solid var(--line);
@@ -450,15 +454,25 @@ select {
   transform: translateX(calc(100% + 1rem));
   opacity: 0; pointer-events: none;
 }
+/* Sempre visibile, a qualsiasi larghezza: e' l'unico comando che apre e
+   chiude il pannello, e un comando che compare e scompare da solo insegna
+   soltanto a non fidarsi. Sta sopra al pannello (z-index piu' alto) perche'
+   a pannello aperto deve restare premibile. */
 .pannello-tog {
-  position: absolute; top: 0.75rem; right: 0.75rem; z-index: 421;
-  width: 38px; height: 38px; border-radius: 11px;
+  position: absolute; top: 0.75rem; right: 0.75rem; z-index: 430;
+  width: 40px; height: 40px; border-radius: 11px;
   border: 1px solid var(--line); background: var(--card); color: var(--ink);
-  font-size: 1.1rem; line-height: 1; cursor: pointer; box-shadow: var(--sh-1);
-  opacity: 0; pointer-events: none; transition: opacity .2s;
+  font-size: 1.15rem; line-height: 1; cursor: pointer; box-shadow: var(--sh-1);
+  transition: background .15s, color .15s;
 }
-.pannello.is-chiuso ~ .pannello-tog,
-.pannello-tog:focus-visible { opacity: 1; pointer-events: auto; }
+.pannello-tog:hover { border-color: var(--accent); }
+/* A pannello aperto il pulsante si accende: dice "premi qui per chiudere".
+   Si passa da :has() sulla scena perche' nel documento il pulsante viene
+   PRIMA del pannello, e il combinatore ~ guarda solo in avanti: era questa
+   la ragione per cui prima il pulsante non si vedeva quasi mai. */
+.mappa-scena:has(.pannello:not(.is-chiuso)) .pannello-tog {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+}
 
 .strato {
   background: var(--bg-2); border-radius: var(--r-sm); padding: 0.55rem 0;
@@ -934,7 +948,7 @@ select {
 @media (max-width: 700px) {
 
   .mappa-scena {
-    height: calc(100dvh - 4.6rem);
+    height: calc(100dvh - 4.6rem - env(safe-area-inset-bottom, 0px));
     margin-bottom: 0;
   }
   #map-src { display: none; }   /* lo dice gia' il pannello */
@@ -1228,8 +1242,8 @@ select {
   border: 1px solid var(--line); background: var(--card); color: var(--ink);
   font-size: 0.8rem; line-height: 1; cursor: pointer;
 }
-.rain-play:hover { border-color: var(--acc); }
-.rain-sl { flex: 1 1 auto; min-width: 0; accent-color: var(--acc); }
+.rain-play:hover { border-color: var(--accent); }
+.rain-sl { flex: 1 1 auto; min-width: 0; accent-color: var(--accent); }
 
 /* Intestazione del pannello: sul telefono e' la maniglia del foglio, e la
    croce e' la via d'uscita. Su schermo largo basta come titolo. */
@@ -1276,7 +1290,7 @@ select {
   font-size: 0.7rem; font-weight: 600; color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
-.poi-v input { accent-color: var(--acc); }
+.poi-v input { accent-color: var(--accent); }
 .poi-v.is-vuota { opacity: 0.45; cursor: default; }
 .poi-v.is-vuota:hover { background: none; }
 
@@ -1288,7 +1302,7 @@ select {
   display: grid; place-items: center;
   width: 26px; height: 26px; margin: -13px 0 0 -13px;
   border-radius: 8px; font-size: 0.9rem; line-height: 1;
-  background: var(--card); border: 1.5px solid var(--acc);
+  background: var(--card); border: 1.5px solid var(--accent);
   box-shadow: var(--sh-1);
 }
 
@@ -1349,7 +1363,7 @@ select {
   font-size: 0.75rem; line-height: 1.35;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 700px) {
   /* Sul telefono il pannello e' un foglio largo quanto lo schermo: ci stanno
      due colonne, e le caselle si toccano col dito. */
   .poi-caselle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1361,7 +1375,7 @@ select {
   .poi-serv > span { width: 30px; height: 30px; margin: -15px 0 0 -15px; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 700px) {
   /* Col foglio aperto lo schermo e' pieno: i comandi dello zoom e la legenda
      restavano a galleggiarci sopra, e si finiva per premere "+" credendo di
      spuntare una casella. Spariscono finche' il foglio e' aperto. */
@@ -1393,7 +1407,7 @@ select {
   cursor: pointer;
 }
 .oz:hover { border-color: var(--line); }
-.oz.is-sel { border-color: var(--acc); background: var(--card); }
+.oz.is-sel { border-color: var(--accent); background: var(--card); }
 .oz-n {
   font-size: 0.72rem; font-weight: 600; color: var(--ink-2);
   line-height: 1.2; min-height: 1.7em;
@@ -1404,7 +1418,7 @@ select {
   display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center;
   font-size: 0.7rem;
 }
-.oz-mm { color: var(--acc); font-weight: 600; }
+.oz-mm { color: var(--accent); font-weight: 600; }
 
 .linea {
   display: flex; align-items: stretch; gap: 0.6rem;
@@ -1415,7 +1429,7 @@ select {
   border: 1px solid var(--line); background: var(--card); color: var(--ink);
   font-size: 0.85rem; line-height: 1; cursor: pointer;
 }
-.linea-play:hover { border-color: var(--acc); }
+.linea-play:hover { border-color: var(--accent); }
 
 /* La pista tiene tre cose sovrapposte: la bolla che insegue il cursore, il
    cursore vero e proprio, e la striscia dei giorni sotto. */
@@ -1430,10 +1444,10 @@ select {
 }
 /* Quando la bolla e' sull'ora corrente cambia colore: e' l'unico momento in
    cui quel numero e' una misura e non una previsione. */
-.linea-bolla.is-adesso { background: var(--acc); color: #fff; }
+.linea-bolla.is-adesso { background: var(--accent); color: var(--on-accent); }
 
 .linea-sl {
-  width: 100%; margin: 0; accent-color: var(--acc);
+  width: 100%; margin: 0; accent-color: var(--accent);
   position: relative; z-index: 2;
 }
 
@@ -1449,9 +1463,9 @@ select {
 }
 .lg-g:last-child { border-right: 0; }
 .lg-g b { font-weight: 700; }
-.lg-g.is-oggi { color: var(--acc); font-weight: 700; }
+.lg-g.is-oggi { color: var(--accent); font-weight: 700; }
 
-@media (max-width: 760px) {
+@media (max-width: 700px) {
   /* Sedici giorni in 375 pixel: i nomi non ci stanno, resta il numero, e il
      giorno per esteso lo dice la bolla. Meglio una striscia leggibile che
      sedici etichette tagliate a meta'. */
@@ -1500,7 +1514,7 @@ select {
 .ant-hud-n {
   flex: 0 0 auto; min-width: 1.4rem; text-align: center;
   padding: 0.1rem 0.3rem; border-radius: 999px;
-  background: var(--acc); color: #fff;
+  background: var(--accent); color: var(--on-accent);
   font-size: 0.7rem; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 
@@ -1512,9 +1526,11 @@ select {
   color: var(--ink-3); font-size: 1.05rem; line-height: 1;
   cursor: pointer; box-shadow: var(--sh-1);
 }
-.ant-hud-b.is-on { color: #fff; background: var(--acc); border-color: var(--acc); }
+.ant-hud-b.is-on {
+  color: var(--on-accent); background: var(--accent); border-color: var(--accent);
+}
 
-@media (max-width: 760px) {
+@media (max-width: 700px) {
   /* Sul telefono il riquadro prende tutta la larghezza tranne il posto del
      pulsante degli strati, e sta in alto: e' dove cade lo sguardo quando il
      telefono e' sul cruscotto. */

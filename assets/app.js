@@ -474,11 +474,12 @@ function avviaMappa() {
     $$("#pannello .basi .chip").forEach((x) => x.classList.toggle("is-on", x === b));
     cambiaBase(b.dataset.base);
   }));
-  $("#pannello-tog").addEventListener("click", () =>
-    $("#pannello").classList.toggle("is-chiuso"));
-
-  $("#pannello-chiudi").addEventListener("click", () =>
-    $("#pannello").classList.add("is-chiuso"));
+  $("#pannello-tog").addEventListener("click", () => {
+    const p = $("#pannello");
+    p.classList.toggle("is-chiuso");
+    $("#pannello-tog").setAttribute("aria-expanded",
+      String(!p.classList.contains("is-chiuso")));
+  });
 
   // Il riquadro dell'antenna: toccarlo apre il pannello sul suo dettaglio.
   $("#ant-hud-apri").addEventListener("click", () => {
@@ -505,6 +506,9 @@ function avviaMappa() {
 
   // Sul telefono il pannello parte chiuso: aperto coprirebbe la mappa, che e'
   // la ragione per cui si e' su questa schermata.
+  // Stesso valore del CSS: sotto questa larghezza il pannello e' un foglio
+  // che copre la mappa, e aprirlo da soli all'ingresso nasconderebbe cio' che
+  // l'utente e' venuto a vedere.
   if (matchMedia("(max-width: 700px)").matches) $("#pannello").classList.add("is-chiuso");
 
   disegnaCrescita();
@@ -554,17 +558,24 @@ function cambiaBase(quale) {
 
 async function accendiStrato(nome, acceso) {
   const m = stato.mappa;
+  const sw = $(`#pannello .sw[data-strato="${nome}"]`);
+  // Dopo un'attesa conta cosa dice la casella adesso, non cosa diceva quando
+  // siamo partiti: nel frattempo l'utente puo' averla rispenta.
+  const ancora = () => (sw ? sw.checked : acceso);
+
   if (nome === "pioggia" && acceso && !stato.strati.pioggia) {
     if (!await preparaPioggia()) { $("#radar-ora").textContent = "non disponibile"; return; }
+    acceso = ancora();
   }
   if (nome === "pioggia") { if (acceso) avviaPioggia(); else fermaPioggia(); }
   if (nome === "sentieri" && acceso && !stato.strati.sentieri) {
     await disegnaSentieri();
+    acceso = ancora();
   }
   if (nome === "mf" && acceso && !stato.strati.mf) disegnaMF();
   if (nome === "confine" && acceso && !stato.strati.confine) disegnaConfine();
   if (nome === "antenne") {
-    if (acceso && !stato.strati.antenne) await disegnaAntenne();
+    if (acceso && !stato.strati.antenne) { await disegnaAntenne(); acceso = ancora(); }
     // fermaAntenne anche quando lo strato non si e' disegnato: se il GPS era
     // acceso va spento comunque.
     if (acceso) avviaAntenne(); else fermaAntenne();
@@ -801,10 +812,21 @@ const ROSA = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
 const rosa = (g) => ROSA[Math.round((((g % 360) + 360) % 360) / 22.5) % 16];
 
 let PIOGGIA = null;
+let pioggiaInCorso = null;     // la preparazione gia' avviata, se c'e'
 
 /** Costruisce la linea del tempo. Torna false se non c'e' niente da mostrare:
  *  meglio dirlo che lasciare acceso uno strato vuoto. */
-async function preparaPioggia() {
+function preparaPioggia() {
+  // Se una preparazione e' gia' in volo si aspetta quella. Due in parallelo
+  // producevano due oggetti diversi, due timer e due ascoltatori sugli stessi
+  // comandi: il secondo vinceva e il primo restava acceso e irraggiungibile.
+  if (!pioggiaInCorso) {
+    pioggiaInCorso = _preparaPioggia().finally(() => { pioggiaInCorso = null; });
+  }
+  return pioggiaInCorso;
+}
+
+async function _preparaPioggia() {
   const P = { frames: [], i: 0, timer: null, sosta: 0, corrente: null,
               gruppo: L.layerGroup(), prev: null };
 
@@ -896,8 +918,17 @@ function mostraFrame(i) {
   const quando = Math.abs(dm) < 8 ? "adesso"
     : dm < 0 ? `${-dm} min fa`
     : dm < 90 ? `fra ${dm} min` : `fra ${Math.round(dm / 60)} h`;
-  $("#radar-ora").textContent =
-    `${ore} \u00b7 ${quando} \u00b7 ${f.misurato ? "radar" : "previsto"}`;
+  // Una mappa vuota non e' una risposta. Sui fotogrammi previsti il massimo
+  // della griglia si conosce, quindi si scrive: "asciutto" spiega il vuoto,
+  // mentre il vuoto da solo sembra un guasto. Sul radar non si potrebbe fare
+  // altrettanto senza rileggere le tessere, e non ne varrebbe il prezzo.
+  let coda = f.misurato ? "radar" : "previsto";
+  if (!f.misurato && PIOGGIA.prev) {
+    const mx = PIOGGIA.prev.mm[f.k].reduce((a, b) => (b > a ? b : a), 0);
+    coda += mx < 0.1 ? " \u00b7 asciutto"
+      : ` \u00b7 fino a ${mx.toFixed(1).replace(".", ",")} mm/h`;
+  }
+  $("#radar-ora").textContent = `${ore} \u00b7 ${quando} \u00b7 ${coda}`;
   $("#rain-sl").value = String(P.i);
 
   // "Verso dove va": il vento si misura da dove viene, quindi la direzione del
