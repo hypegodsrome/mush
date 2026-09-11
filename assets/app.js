@@ -498,6 +498,11 @@ function avviaMappa() {
     antBottoneSegui();
   });
 
+  // La legenda parte chiusa: e' una spiegazione che si legge una volta, e
+  // aperta copre proprio la parte di mappa che si e' venuti a guardare.
+  $("#legenda-corpo").hidden = true;
+  $("#legenda-tog").setAttribute("aria-expanded", "false");
+
   $("#legenda-tog").addEventListener("click", (e) => {
     const aperta = e.currentTarget.getAttribute("aria-expanded") === "true";
     e.currentTarget.setAttribute("aria-expanded", String(!aperta));
@@ -838,8 +843,9 @@ async function _preparaPioggia() {
       // Supported", che finiva dritta sulla mappa. Con maxNativeZoom Leaflet
       // ingrandisce l'ultimo livello con dati veri: sgranato, ma la domanda a
       // cui deve rispondere - sta piovendo sulla zona? - regge lo stesso.
+      const lato = devicePixelRatio > 1.3 ? 512 : 256;
       P.frames.push({ t: f.time * 1000, misurato: true,
-                      url: `${d.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png` });
+                      url: `${d.host}${f.path}/${lato}/{z}/{x}/{y}/2/1_1.png` });
     }
   } catch (e) {
     console.warn("radar non disponibile:", e.message);
@@ -909,7 +915,7 @@ function mostraFrame(i) {
   const l = stratoFrame(f);
   if (!P.gruppo.hasLayer(l)) P.gruppo.addLayer(l);
   if (P.corrente && P.corrente !== l) P.corrente.setOpacity(0);
-  l.setOpacity(f.misurato ? 0.68 : 0.62);
+  l.setOpacity(f.misurato ? 0.85 : 0.7);
   P.corrente = l;
 
   const d = new Date(f.t);
@@ -1164,10 +1170,18 @@ const LEGENDA = {
     ].map(([c, n]) => `<span class="lg-v"><i style="background:${c}"></i>${n}</span>`).join("")}</div>
     <small>Corine Land Cover 2018, celle da 100 m</small>`,
   pioggia: () => `<b>Pioggia</b>
-    <div class="lg-voci">${RAIN_SCALA.map(([mm, c]) =>
-      `<span class="lg-v"><i style="background:rgb(${c.join(",")})"></i>${
-        String(mm).replace(".", ",")} mm/h</span>`).join("")}</div>
-    <small>Fino a +30 minuti e' radar misurato, dopo e' modello previsto</small>`,
+    <div class="lg-sotto">Radar &middot; fino a +30 min</div>
+    <div class="lg-barra" style="background:linear-gradient(90deg,
+      #8cd6ff 0%, #4ab54a 40%, #e8d84a 70%, #d64545 100%)"></div>
+    <div class="lg-estremi"><span>debole</span><span>molto forte</span></div>
+    <div class="lg-sotto">Previsione &middot; +1 &rarr; +24 h</div>
+    <div class="lg-barra" style="background:linear-gradient(90deg, ${
+      RAIN_SCALA.map(([mm, c], i) =>
+        `rgb(${c.join(",")}) ${(100 * i / (RAIN_SCALA.length - 1)).toFixed(0)}%`)
+        .join(", ")})"></div>
+    <div class="lg-estremi"><span>0,1 mm/h</span><span>25 mm/h</span></div>
+    <small>Due scale diverse: quelle del radar sono di RainViewer, che non
+      pubblica le soglie in mm/h.</small>`,
   confine: () => `<b>Confine del Parco</b>
     <div class="lg-voci"><span class="lg-v"><i style="background:#15803d"></i>
       Perimetro dell'area protetta</span></div>`,

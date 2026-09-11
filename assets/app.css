@@ -575,7 +575,7 @@ select {
 .lg-b b { display: block; font-size: 0.78rem; margin-bottom: 0.35rem; }
 .lg-b small { display: block; margin-top: 0.35rem; font-size: 0.66rem; color: var(--ink-3); }
 .lg-barra {
-  height: 9px; border-radius: 5px;
+  height: 9px; border-radius: 5px; margin-top: 0.15rem;
   background: linear-gradient(90deg, #9ca3af 0%, #9ca3af 22%, #fbbf24 48%, #f97316 72%, #ef4444 100%);
 }
 .lg-estremi {
@@ -1352,6 +1352,12 @@ select {
 }
 .ant-r b { font-variant-numeric: tabular-nums; }
 .ant-nulla { margin: 0; font-size: 0.72rem; color: var(--ink-3); }
+
+.lg-sotto {
+  margin-top: 0.45rem; font-size: 0.68rem; font-weight: 700;
+  color: var(--ink-2);
+}
+.lg-sotto:first-of-type { margin-top: 0.25rem; }
 
 .pop-cat {
   font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
