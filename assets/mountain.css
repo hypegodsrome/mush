@@ -149,8 +149,8 @@ body.webcam-open { overflow: hidden; }
   .livata-station-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guscio { grid-template-columns: minmax(0, 1fr); }
   main { padding: 20px 20px 110px; }
-  .rail { position: fixed; inset: auto 0 0; width: 100%; height: calc(58px + env(safe-area-inset-bottom)); max-height: none; z-index: 2000; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: stretch; gap: 0; padding: 3px 5px calc(3px + env(safe-area-inset-bottom)); overflow: clip; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px #2a2a2a16; backdrop-filter: none; }
-  .rail > .voce { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; width: 100%; height: 52px; min-height: 0; gap: 1px; padding: 3px 0; border-radius: 10px; }
+  .rail { position: fixed; inset: auto 0 0; width: 100%; height: calc(58px + env(safe-area-inset-bottom)); max-height: none; z-index: 2000; display: flex; align-items: stretch; gap: 0; padding: 3px 5px calc(3px + env(safe-area-inset-bottom)); overflow: clip; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px #2a2a2a16; backdrop-filter: none; }
+  .rail > .voce { display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; min-width: 0; width: 0; height: 52px; min-height: 0; gap: 1px; padding: 3px 0; border-radius: 10px; }
   .voce-txt { width: 100%; text-align: center; }
   .voce-txt b { font-size: .62rem; line-height: 1.1; white-space: nowrap; }
   .rail .voce-ic { width: 22px; height: 22px; min-height: 22px; font-size: 1rem; }
