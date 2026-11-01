@@ -4,7 +4,8 @@ La Home mostra le quattro foto fornite per le stagioni meteorologiche:
 primavera da marzo, estate da giugno, autunno da settembre e inverno da dicembre
 (calendario Europe/Rome). Le immagini mantengono le proporzioni originali, senza
 ritaglio. La Home presenta accessi a Webcam, Meteo e Mappa; il menu compare
-nelle viste interne.
+nelle viste interne. Colori di sfondo, testi e schede della sola Home seguono
+la stagione, con varianti chiare e scure secondo il dispositivo.
 
 Sito personale su funghi e meteo della **Valle dell'Aniene** e dei **Monti
 Simbruini** (Monte Livata, Subiaco, Jenne, Canterano).

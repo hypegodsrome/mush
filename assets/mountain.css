@@ -186,6 +186,26 @@ body.webcam-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
 
 /* Home: seasonal photography is always shown in full, at its natural ratio. */
+body[data-home-stagione="primavera"] { --home-bg: #edf2e8; --home-ink: #294031; --home-muted: #496352; --home-hero: #3a5543; --home-card: #fbfcf7; --home-border: #ccdac7; --home-icon: #e1ebdc; }
+body[data-home-stagione="estate"] { --home-bg: #e8f1f4; --home-ink: #23465d; --home-muted: #426a7b; --home-hero: #28546c; --home-card: #f9fdfe; --home-border: #c6dce5; --home-icon: #dcecf2; }
+body[data-home-stagione="autunno"] { --home-bg: #f4ede5; --home-ink: #48372e; --home-muted: #765848; --home-hero: #544133; --home-card: #fffaf5; --home-border: #e3d3c1; --home-icon: #f1e1d1; }
+body[data-home-stagione="inverno"] { --home-bg: #e9f0f4; --home-ink: #2a4051; --home-muted: #547087; --home-hero: #3B4C5E; --home-card: #f9fcfe; --home-border: #c9d8e2; --home-icon: #e0eaf1; }
+@media (prefers-color-scheme: dark) {
+  body[data-home-stagione="primavera"] { --home-bg: #1b2a22; --home-ink: #edf5e9; --home-muted: #bfd1bc; --home-hero: #263d2e; --home-card: #28392d; --home-border: #49624d; --home-icon: #354c3a; }
+  body[data-home-stagione="estate"] { --home-bg: #172b37; --home-ink: #e8f5fa; --home-muted: #b4d3e0; --home-hero: #23475a; --home-card: #263e4c; --home-border: #466a7b; --home-icon: #315363; }
+  body[data-home-stagione="autunno"] { --home-bg: #29221e; --home-ink: #fff0de; --home-muted: #dfbfa1; --home-hero: #493626; --home-card: #392b23; --home-border: #69503b; --home-icon: #53402f; }
+  body[data-home-stagione="inverno"] { --home-bg: #1b2933; --home-ink: #ecf5fa; --home-muted: #c2d5e0; --home-hero: #31485b; --home-card: #293a46; --home-border: #4d6879; --home-icon: #344c5b; }
+}
+body.is-home { background: var(--home-bg, var(--bg)); color: var(--home-ink, var(--ink)); }
+body.is-home .mountain-wordmark, body.is-home .mountain-wordmark span, body.is-home .mountain-coordinate { color: var(--home-ink, var(--ink)); }
+body.is-home .mountain-head-actions .btn-ghost { background: var(--home-card, var(--card)); color: var(--home-ink, var(--ink)); border-color: var(--home-border, var(--line)); }
+body.is-home #v-home .livata-hero { background: var(--home-hero, #3B4C5E); }
+body.is-home #v-home .livata-photo { background: color-mix(in srgb, var(--home-hero) 80%, #000); }
+body.is-home #v-home .livata-intro .eyebrow, body.is-home #v-home .livata-intro h2 { color: var(--home-ink); }
+body.is-home #v-home .livata-intro p, body.is-home #v-home .livata-shortcut small { color: var(--home-muted); }
+body.is-home #v-home .livata-shortcut { background: var(--home-card); color: var(--home-ink); border-color: var(--home-border); }
+body.is-home #v-home .livata-shortcut-icon { background: var(--home-icon); color: var(--home-ink); }
+body.is-home #v-home .livata-shortcut-arrow { color: var(--home-muted); }
 body.is-home .guscio { grid-template-columns: minmax(0, 1fr); }
 body.is-home .rail { display: none; }
 .mountain-head-actions { display: flex; align-items: center; gap: 12px; }

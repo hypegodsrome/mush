@@ -2200,6 +2200,7 @@ function stagioneHome(data = new Date()) {
 }
 function aggiornaFotoHome() {
   const stagione = stagioneHome();
+  document.body.dataset.homeStagione = stagione;
   const [file, descrizione] = FOTO_STAGIONI[stagione];
   const img = $("#home-season-photo");
   if (img.dataset.stagione === stagione) return;
