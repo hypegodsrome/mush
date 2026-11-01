@@ -45,6 +45,9 @@ body, button, input, select, textarea, h1, h2, h3, h4, code, pre,
 .top-right { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .top-right .user { overflow-wrap: anywhere; }
 .hero .q-label { color: #FFFFFF !important; }
+.stazione-previsione-wrap { margin: 28px 0; }
+.stazione-previsione-wrap h2 { margin: 0 0 8px; }
+.stazione-previsione-wrap > p { margin: 0 0 16px; }
 button, select, input { touch-action: manipulation; }
 button, select, .btn-ghost, .btn-google { min-height: 44px; }
 button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid #5984aa; outline-offset: 3px; }

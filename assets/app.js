@@ -325,6 +325,9 @@ function renderPrevisione() {
       + `punteggio ${p.q.toFixed(1).replace(".", ",")}.`;
 
   $("#clima").innerHTML = rigaClima(s);
+  const stazioneLivata = s.id === "livata" && stato.dati.stazione;
+  $("#stazione-previsione-wrap").hidden = !stazioneLivata;
+  if (stazioneLivata) $("#stazione-previsione").innerHTML = htmlStazione(stato.dati.stazione);
 
   // strip
   const max = Math.max(1, ...sp.prossimi.map((x) => x.q));
@@ -2145,9 +2148,7 @@ function renderStatModello(s) {
       </p>`;
 }
 
-function renderStazione() {
-  const st = stato.dati.stazione;
-  if (!st) { $("#stazione").innerHTML = `<p class="muted small">Stazione non raggiungibile.</p>`; return; }
+function htmlStazione(st) {
   const obs = [
     ["Temperatura", st.temp, "°C"], ["Umidità", st.umidita, "%"],
     ["Pioggia oggi", st.pioggia_oggi, "mm"], ["Pioggia mese", st.pioggia_mese, "mm"],
@@ -2155,7 +2156,7 @@ function renderStazione() {
     ["Raffica max", st.raffica_kmh, "km/h"], ["Punto di rugiada", st.dew_point, "°C"],
     ["Pressione", st.pressione, "mb"],
   ];
-  $("#stazione").innerHTML = obs.map(([k, v, u]) => `
+  return obs.map(([k, v, u]) => `
     <div class="obs"><div class="obs-k">${esc(k)}</div>
       <div class="obs-v">${v == null ? "n/d" : String(v).replace(".", ",")} <small>${esc(u)}</small></div>
     </div>`).join("")
@@ -2164,6 +2165,12 @@ function renderStazione() {
         aggiornata ${esc(st.aggiornamento || "n/d")} ·
         <a href="${esc(st.url)}" rel="noopener">Rete Meteo Lazio</a>
       </p>`;
+}
+
+function renderStazione() {
+  const st = stato.dati.stazione;
+  $("#stazione").innerHTML = st ? htmlStazione(st)
+    : '<p class="muted small">Stazione non raggiungibile.</p>';
 }
 
 /** Grafico combinato pioggia/temperatura, SVG scritto a mano: una libreria
