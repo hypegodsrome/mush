@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mush — Funghi e meteo dei Monti Simbruini</title>
+<title>Mountain — Funghi e meteo dei Monti Simbruini</title>
 <meta name="description" content="Previsione di crescita dei funghi sui Monti Simbruini: modello a sei fattori, stazione meteo di Monte Livata, mappa nazionale e webcam in diretta.">
-<meta name="theme-color" content="#12100d">
+<meta name="theme-color" content="#3B4C5E">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex, nofollow">
 
@@ -53,14 +53,15 @@
       integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
       crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/mountain.css">
 </head>
 <body>
 
 <!-- ==================== GATE DI ACCESSO ==================== -->
 <div id="gate" class="gate" hidden>
   <div class="gate-card">
-    <div class="gate-mark">🍄</div>
-    <h1>Mush</h1>
+    <div class="gate-mark">△</div>
+    <h1>Mountain</h1>
     <p class="gate-sub">Funghi, meteo e webcam dei Monti Simbruini</p>
     <button id="btn-login" class="btn-google">
       <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
@@ -86,7 +87,7 @@
 <div class="guscio">
 
 <nav class="rail" id="rail">
-  <div class="rail-brand"><span class="brand-mark">🍄</span> Mush</div>
+  <div class="rail-brand"><span class="brand-mark">△</span> Mountain</div>
 
   <span class="rail-et">Menù di navigazione</span>
 
@@ -115,11 +116,6 @@
     <span class="voce-txt"><b>Meteo</b><small>Stazione e statistiche per zona</small></span>
     <em class="voce-fr">›</em>
   </button>
-  <button class="voce" data-view="modello" type="button">
-    <i class="voce-ic">📖</i>
-    <span class="voce-txt"><b>Modello</b><small>Come funziona, e cosa non sa</small></span>
-    <em class="voce-fr">›</em>
-  </button>
 
   <a class="voce voce-adm" id="link-adm" href="adm/" hidden>
     <i class="voce-ic">🔒</i>
@@ -136,6 +132,8 @@
 </nav>
 
 <main>
+<header class="mountain-heading"><a href="./" class="mountain-wordmark">Mountain<span> / SIMBRUINI</span></a><span class="mountain-coordinate">41°55′ N · 13°08′ E</span></header>
+<p id="sezioni-vuote" class="controls" role="status" hidden>Le sezioni del sito sono temporaneamente non disponibili.</p>
 
 <!-- ---------- PREVISIONE ---------- -->
 <section id="v-previsione" class="view">
@@ -447,7 +445,7 @@
      è il punteggio di crescita per la specie scelta.</p>
   <div id="confronto" class="confronto"></div>
 
-  <h2>Modello — <span id="meteo-zona"></span></h2>
+  <h2>Dati previsti — <span id="meteo-zona"></span></h2>
   <div id="stat-modello" class="stazione"></div>
 
   <h2>Pioggia passata: le fonti a confronto</h2>
@@ -466,74 +464,19 @@
   </p>
 </section>
 
-<!-- ---------- MODELLO ---------- -->
-<section id="v-modello" class="view" hidden>
-  <h2>Come funziona il modello</h2>
-  <p>
-    Il fungo che raccogli non nasce il giorno in cui piove. La pioggia innesca il
-    micelio, poi servono da una a tre settimane perché il carpoforo emerga. Per
-    questo il punteggio di oggi dipende soprattutto dalla pioggia caduta
-    <strong>8–21 giorni fa</strong>, e dal fatto che nel frattempo il terreno non
-    si sia asciugato.
-  </p>
-  <p>
-    Sei fattori, ciascuno normalizzato fra 0 e 1, combinati con una
-    <strong>media geometrica pesata</strong>. La media geometrica è una scelta
-    precisa: se un fattore va a zero il punteggio crolla, che è il comportamento
-    reale. Una media aritmetica compenserebbe la siccità con una bella
-    temperatura, e non è così che funziona.
-  </p>
-  <div id="pesi" class="pesi"></div>
-  <span class="eyebrow">Calendario</span>
-  <h2>Quando esce cosa</h2>
-  <p class="muted small">
-    Le finestre fenologiche del modello, mese per mese. Il mese in corso è
-    evidenziato. Sono periodi tipici: il meteo di una singola annata può
-    anticiparli o farli saltare del tutto.
-  </p>
-  <div id="calendario"></div>
 
-  <span class="eyebrow">Riferimento</span>
-  <h2>Specie e alberi ospiti</h2>
-  <p class="muted small">
-    Il numero accanto a ogni albero è l'affinità micorrizica, da 0 a 1.
-  </p>
-  <div id="specie-info" class="specie-info"></div>
-  <h2>Composizione dei boschi</h2>
-  <p class="muted small">
-    Stime per fascia altimetrica: faggeta sopra i 1000 m, castagno e querce
-    sotto, leccio sui versanti caldi dell'Aniene. Non è un rilievo forestale.
-  </p>
-  <div id="zone-bosco" class="specie-info"></div>
-  <h2>Sorgenti dei dati</h2>
-  <div id="sorgenti" class="sorgenti"></div>
-  <details class="disclaimer">
-    <summary>Limiti — leggi prima di fidarti</summary>
-    <ul>
-      <li>È un modello meteorologico, non una garanzia: non sa dove sono i tuoi
-          boschi, che alberi ci sono, com'è il suolo, né se qualcuno è già passato.</li>
-      <li>La griglia Meteo Funghi, usata come confronto, ha celle da 0,2° (circa
-          20 km): dice come sta la zona, non il singolo versante.</li>
-      <li>La correzione con la stazione vale entro 8 km da Monte Livata. Più
-          lontano restano i dati del modello, che in montagna sbaglia parecchio.</li>
-      <li>Il punteggio dice se le <em>condizioni</em> sono favorevoli. Se il
-          micelio in quel bosco non c'è, non nasce niente comunque.</li>
-      <li><strong>Non usare questo sito per decidere se un fungo è commestibile.</strong>
-          Per quello serve un micologo della ASL.</li>
-    </ul>
-  </details>
-</section>
 
 </main>
 </div>
 
-<dialog id="lb" class="lb">
+<dialog id="lb" class="lb" aria-labelledby="lb-title">
   <div class="lb-bar">
     <div class="lb-txt"><b id="lb-title"></b><span id="lb-sub"></span></div>
     <button id="lb-full" class="btn-ghost" type="button">Schermo intero</button>
     <button id="lb-close" class="btn-ghost" type="button" aria-label="Chiudi">✕</button>
   </div>
-  <img id="lb-img" alt="">
+  <div id="lb-media" class="lb-media"></div>
+  <p id="lb-status" class="lb-status" role="status"></p>
 </dialog>
 
 <dialog id="sd" class="sd">

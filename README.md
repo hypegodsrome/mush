@@ -1,4 +1,4 @@
-# Mush
+# Mountain
 
 Sito personale su funghi e meteo della **Valle dell'Aniene** e dei **Monti
 Simbruini** (Monte Livata, Subiaco, Jenne, Canterano).
@@ -10,7 +10,19 @@ da GitHub Actions ogni 6 ore.
 - **Mappa** — le sette zone, più la griglia nazionale di Meteo Funghi
 - **Webcam** — Monte Livata e dintorni, caricate solo a richiesta
 - **Meteo** — stazione al suolo e statistiche per ogni zona
-- **Modello** — come funziona, con che pesi, e cosa non sa fare
+
+### Visibilità delle sezioni
+
+L'amministratore può mostrare o nascondere Previsione, Mappa, Specie, Webcam
+e Meteo dalla pagina `adm/`. Le preferenze si salvano nel documento Firestore
+`impostazioni/sezioni` e si applicano in tempo reale agli utenti collegati.
+Le sezioni nascoste restano consultabili dall'amministratore, con un'indicazione
+nel menu. Questa funzione gestisce la visibilità nell'interfaccia: i file statici
+non diventano privati. Pubblicare anche `firestore.rules` per attivare il salvataggio.
+
+Verifiche: `python scripts/test_http_retry.py`; per i permessi avviare
+`firebase emulators:start --only firestore --project demo-mountain` e poi
+`python scripts/test_section_rules.py`.
 
 Tema chiaro o scuro dal pulsante in alto a destra: cicla automatico → chiaro →
 scuro. In automatico segue il sistema operativo. Entrambe le palette superano
@@ -191,6 +203,10 @@ leggendo `Last-Modified` (dal browser non si può, quasi nessuna manda header
 CORS). Oltre 24 ore dall'ultimo fotogramma la webcam finisce in fondo alla
 pagina, in piccolo e in bianco e nero, con scritto da quanto è ferma. Quando
 riparte torna su a dimensione piena da sola, senza toccare niente.
+
+Immagini e video si aprono in un visualizzatore a tutta finestra, anche sui
+dispositivi senza API Fullscreen. Il pulsante Schermo intero attiva la modalità
+nativa quando disponibile. Chiudendo un video viene rimosso il relativo player.
 
 Si caricano **solo** all'apertura della scheda o premendo Aggiorna: nessun
 `setInterval`, nessun polling. Un tocco sull'immagine la apre a tutto schermo.

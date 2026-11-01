@@ -18,7 +18,7 @@ export const EMAIL_ADMIN = "eug2002@gmail.com";
 /** Due accessi entro questa finestra sono la stessa sessione. */
 const SESSIONE_MS = 30 * 60 * 1000;
 
-export const isAdmin = (u) => !!u && u.email === EMAIL_ADMIN;
+export const isAdmin = (u) => !!u && u.email === EMAIL_ADMIN && u.emailVerified === true;
 
 /** Registra l'accesso e restituisce lo stato dell'utente.
  *  Ritorna {bandito, nuovo, errore}. `errore` valorizzato significa che il

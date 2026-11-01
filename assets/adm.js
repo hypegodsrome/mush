@@ -13,6 +13,7 @@ import {
   reauthenticateWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { EMAIL_ADMIN, isAdmin, elencoUtenti, bandisci, elimina } from "./registro.js";
+import { SEZIONI, leggiSezioni, salvaSezioni } from "./sezioni.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -55,6 +56,7 @@ onAuthStateChanged(auth, async (u) => {
   $("#app").hidden = false;
   $("#user").textContent = u.email;
   carica();
+  caricaSezioni();
 });
 
 $("#btn-login").addEventListener("click", async () => {
@@ -70,6 +72,41 @@ $("#btn-login").addEventListener("click", async () => {
 $("#btn-logout").addEventListener("click", () => signOut(auth));
 $("#sel-ordine").addEventListener("change", disegna);
 $("#sel-filtro").addEventListener("change", disegna);
+$("#ricarica-sezioni").addEventListener("click", caricaSezioni);
+$("#form-sezioni").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!isAdmin(auth.currentUser)) return;
+  const valori = Object.fromEntries($$("#sezioni-opzioni input").map(input => [input.name, input.checked]));
+  $("#sezioni-campi").disabled = true;
+  $("#salva-sezioni").disabled = true;
+  $("#sezioni-msg").textContent = "Salvataggio…";
+  try {
+    await salvaSezioni(app, valori);
+    $("#sezioni-msg").textContent = "Visibilità salvata. Il sito si aggiorna anche per gli utenti già collegati.";
+  } catch (e) {
+    $("#sezioni-msg").textContent = "Salvataggio non riuscito. Nessuna conferma ricevuta: riprova.";
+  } finally {
+    $("#sezioni-campi").disabled = false;
+    $("#salva-sezioni").disabled = false;
+  }
+});
+
+async function caricaSezioni() {
+  $("#sezioni-campi").disabled = true;
+  $("#salva-sezioni").disabled = true;
+  $("#ricarica-sezioni").hidden = true;
+  try {
+    const valori = await leggiSezioni(app);
+    $("#sezioni-opzioni").innerHTML = Object.entries(SEZIONI).map(([id, nome]) =>
+      `<label class="sezione-toggle"><span>${nome}</span><input type="checkbox" role="switch" name="${id}" ${valori[id] ? "checked" : ""}><span class="sezione-stato"></span></label>`).join("");
+    $("#sezioni-campi").disabled = false;
+    $("#salva-sezioni").disabled = false;
+    $("#sezioni-msg").textContent = "Attiva una sezione per mostrarla, disattivala per nasconderla.";
+  } catch (e) {
+    $("#sezioni-msg").textContent = "Impostazioni non disponibili. Verifica la connessione e riprova.";
+    $("#ricarica-sezioni").hidden = false;
+  }
+}
 
 async function carica() {
   $("#msg").textContent = "Caricamento…";

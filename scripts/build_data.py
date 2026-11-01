@@ -20,6 +20,8 @@ import json
 import os
 import re
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone, timedelta
@@ -157,6 +159,26 @@ def _get(url, data=None, headers=None, timeout=60):
 # --------------------------------------------------------------------------
 # meteofunghi.fungocenter.it
 # --------------------------------------------------------------------------
+
+def _get_json(url, timeout=60, attempts=4):
+    """Retry transient upstream failures; never substitute stale or empty data."""
+    for attempt in range(attempts):
+        try:
+            return json.loads(_get(url, timeout=timeout).decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (408, 429, 500, 502, 503, 504):
+                raise
+            error = exc
+        except (urllib.error.URLError, TimeoutError, ConnectionError,
+                json.JSONDecodeError, UnicodeDecodeError) as exc:
+            error = exc
+        if attempt == attempts - 1:
+            raise error
+        delay = min(5 * 2 ** attempt, 40)
+        print(f"[warn] JSON {urllib.parse.urlsplit(url).hostname}: "
+              f"{type(error).__name__}; nuovo tentativo {attempt + 2}/{attempts} "
+              f"fra {delay}s", file=sys.stderr)
+        time.sleep(delay)
 
 def scrape_meteofunghi():
     """La pagina /embed inietta la griglia lato server come
@@ -412,7 +434,7 @@ def fetch_orario(spots):
         "forecast_days": FORECAST_DAYS,
         "past_days": 1,     # la notte appena passata serve per il contesto
     })
-    raw = json.loads(_get(f"{OPENMETEO}?{q}", timeout=180).decode())
+    raw = _get_json(f"{OPENMETEO}?{q}", timeout=180)
     if not isinstance(raw, list):
         raw = [raw]
     if len(raw) != len(spots):
@@ -482,7 +504,7 @@ def fetch_pioggia_prev():
         "timezone": "UTC",
         "forecast_hours": ORE_PREVISIONE,
     })
-    raw = json.loads(_get(f"{OPENMETEO}?{q}", timeout=120).decode())
+    raw = _get_json(f"{OPENMETEO}?{q}", timeout=120)
     if not isinstance(raw, list):
         raw = [raw]
     if len(raw) != len(pts):
@@ -526,7 +548,7 @@ def fetch_openmeteo(spots):
         "past_days": PAST_DAYS,
         "forecast_days": FORECAST_DAYS,
     })
-    raw = json.loads(_get(f"{OPENMETEO}?{q}").decode())
+    raw = _get_json(f"{OPENMETEO}?{q}")
     # Con un punto solo risponde con un oggetto, con piu' punti con una lista.
     return raw if isinstance(raw, list) else [raw]
 
@@ -558,7 +580,7 @@ def _daily_multi(base, spots, extra):
         "timezone": "Europe/Rome",
         **extra,
     })
-    raw = json.loads(_get(f"{base}?{q}", timeout=180).decode())
+    raw = _get_json(f"{base}?{q}", timeout=180)
     return raw if isinstance(raw, list) else [raw]
 
 

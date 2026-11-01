@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mush — Amministrazione</title>
+<title>Mountain — Amministrazione</title>
 <meta name="theme-color" content="#12100d">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex, nofollow">
@@ -28,6 +28,7 @@
   upgrade-insecure-requests
 ">
 <link rel="stylesheet" href="../assets/app.css">
+<link rel="stylesheet" href="../assets/mountain.css">
 </head>
 <body>
 
@@ -44,7 +45,7 @@
 
 <div id="app" hidden>
   <header class="top">
-    <div class="brand"><span class="brand-mark">🍄</span> Mush · admin</div>
+    <div class="brand"><span class="brand-mark">△</span> Mountain · admin</div>
     <div class="top-right">
       <span id="user" class="user"></span>
       <a class="btn-ghost" href="../">Sito</a>
@@ -53,6 +54,16 @@
   </header>
 
   <main>
+    <section class="admin-sezioni" aria-labelledby="sezioni-titolo">
+      <h2 id="sezioni-titolo">Sezioni del sito</h2>
+      <p>Scegli cosa mostrare agli utenti. Le sezioni nascoste restano accessibili a te come amministratore.</p>
+      <form id="form-sezioni">
+        <fieldset id="sezioni-campi" disabled><legend>Visibilità delle sezioni</legend><div id="sezioni-opzioni"></div></fieldset>
+        <button id="salva-sezioni" class="btn-google" type="submit" disabled>Salva visibilità</button>
+      </form>
+      <p id="sezioni-msg" role="status" aria-live="polite">Caricamento impostazioni…</p>
+      <button id="ricarica-sezioni" class="btn-ghost" type="button" hidden>Riprova</button>
+    </section>
     <h2>Chi è entrato</h2>
     <div id="riassunto" class="stazione"></div>
 

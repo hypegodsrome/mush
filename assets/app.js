@@ -21,6 +21,9 @@ const NOMI_FATTORI = {
 
 const stato = { dati: null, spot: null, specie: "porcino",
                 mappa: null, base: null, strati: {} };
+let sezioniVisibili = {};
+let amministratore = false;
+let stopSezioni = null;
 
 // ==========================================================================
 // Utilita'
@@ -141,6 +144,7 @@ function mostraGate(msg) {
 }
 
 function apriApp(utente, opz = {}) {
+  amministratore = !!opz.admin;
   $("#gate").hidden = true;
   $("#app").hidden = false;
   $("#user").textContent = utente?.email || "modalità sviluppo";
@@ -175,6 +179,8 @@ if (!configurato && inLocale) {
   // deciso qui - lo decidono le regole di Firestore, che girano sui server
   // di Google. Questo controllo serve solo a mostrare un messaggio decente.
   onAuthStateChanged(auth, async (u) => {
+    stopSezioni?.();
+    stopSezioni = null;
     if (!u) return mostraGate();
 
     const { registraAccesso, isAdmin } = await import("./registro.js");
@@ -185,7 +191,17 @@ if (!configurato && inLocale) {
       await signOut(auth);
       return mostraGate("Questo account non ha più accesso al sito.");
     }
-    apriApp(u, { admin: isAdmin(u), registro: !esito.errore });
+    try {
+      const { leggiSezioni, osservaSezioni } = await import("./sezioni.js");
+      sezioniVisibili = await leggiSezioni(fbApp);
+      apriApp(u, { admin: isAdmin(u), registro: !esito.errore });
+      stopSezioni = osservaSezioni(fbApp, valori => {
+        sezioniVisibili = valori;
+        if (stato.dati) applicaSezioni();
+      }, () => mostraGate("Impossibile verificare le sezioni disponibili. Ricarica la pagina per riprovare."));
+    } catch (e) {
+      mostraGate("Impossibile caricare le sezioni disponibili. Ricarica la pagina per riprovare.");
+    }
   });
 
   // I due inciampi del primo deploy. Entrambi si risolvono in console, ma i
@@ -248,10 +264,9 @@ async function avvia() {
 
   riempiSelettori();
   renderPrevisione();
-  renderStagioni();
-  renderModello();
   attivaTab();
   avviaLightbox();
+  applicaSezioni();
 }
 
 function riempiSelettori() {
@@ -1710,6 +1725,7 @@ function schedaCam(c, piccola) {
         <span class="cam-name">${esc(c.nome)}</span>
         <span class="cam-sub">${esc(piccola ? (c.errore || "non attiva") : c.dove)}</span>
       </figcaption>
+      <span class="cam-expand" aria-hidden="true">⛶ Ingrandisci</span>
       <div class="cam-msg"></div>
     </figure>`;
 }
@@ -1771,29 +1787,49 @@ function apriGrande(fig) {
   const c = (stato.dati.webcam.cam || []).find((x) => x.id === id);
   if (!c) return;
 
-  if (c.iframe) {
-    const fr = $(".cam-shot", fig);
-    if (fr.requestFullscreen) fr.requestFullscreen().catch(() => {});
-    return;
-  }
-
   const dlg = $("#lb");
-  $("#lb-img").src = $(".cam-shot", fig).src;   // gia' scaricata: nessun nuovo giro
+  const media = $(".cam-shot", fig).cloneNode(true);
+  media.removeAttribute("tabindex");
+  media.removeAttribute("loading");
+  media.removeAttribute("class");
+  media.removeAttribute("data-state");
+  media.id = c.iframe ? "lb-video" : "lb-img";
+  if (!c.iframe) media.alt = c.nome;
+  $("#lb-status").textContent = c.iframe ? "Stream fornito da una webcam esterna." : "";
+  media.addEventListener("error", () => {
+    $("#lb-status").textContent = "Webcam non raggiungibile. Riprova più tardi.";
+  });
+  $("#lb-media").replaceChildren(media);
   $("#lb-title").textContent = c.nome;
   $("#lb-sub").textContent = c.viva ? c.dove : (c.errore || "non attiva");
   dlg.showModal();
+  document.body.classList.add("webcam-open");
+  $("#lb-close").focus();
 }
 
 function avviaLightbox() {
   const dlg = $("#lb");
+  let fullscreenWebcam = false;
   // Click fuori dall'immagine = chiudi.
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
   $("#lb-close").addEventListener("click", () => dlg.close());
   $("#lb-full").addEventListener("click", () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else dlg.requestFullscreen?.().catch(() => {});
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (document.documentElement.requestFullscreen) {
+      fullscreenWebcam = true;
+      document.documentElement.requestFullscreen().catch(() => {
+      fullscreenWebcam = false;
+      $("#lb-status").textContent = "Visualizzazione a tutta finestra attiva su questo dispositivo.";
+    });
+    }
+    else $("#lb-status").textContent = "Visualizzazione a tutta finestra attiva su questo dispositivo.";
   });
-  dlg.addEventListener("close", () => { $("#lb-img").src = ""; });
+  dlg.addEventListener("close", () => {
+    if (fullscreenWebcam && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    fullscreenWebcam = false;
+    $("#lb-media").replaceChildren();
+    document.body.classList.remove("webcam-open");
+  });
 }
 
 // ==========================================================================
@@ -2312,7 +2348,35 @@ function attivaTab() {
   $$(".voce[data-view]").forEach((b) => b.addEventListener("click", () => mostraVista(b)));
 }
 
+function applicaSezioni() {
+  const pulsanti = $$(".voce[data-view]");
+  pulsanti.forEach(b => {
+    const nascosta = sezioniVisibili[b.dataset.view] === false;
+    b.hidden = nascosta && !amministratore;
+    b.classList.toggle("sezione-nascosta", nascosta && amministratore);
+    b.title = nascosta && amministratore ? "Nascosta agli utenti · visibile a te come amministratore" : "";
+  });
+  const attiva = $(".voce.is-on[data-view]");
+  const prima = pulsanti.find(b => !b.hidden);
+  $("#sezioni-vuote").hidden = !!prima;
+  if (!prima) {
+    $$(".view").forEach(s => { s.hidden = true; });
+    $("main").classList.remove("e-mappa");
+    fermaAntenne();
+    fermaOre();
+    if ($("#lb").open) $("#lb").close();
+    if ($("#sd").open) $("#sd").close();
+    return;
+  }
+  if (!attiva || attiva.hidden || $("#v-" + attiva.dataset.view).hidden) {
+    if ($("#lb").open) $("#lb").close();
+    if ($("#sd").open) $("#sd").close();
+    mostraVista(prima);
+  }
+}
+
 function mostraVista(b) {
+  if (!b || b.hidden || (!amministratore && sezioniVisibili[b.dataset.view] === false)) return;
   const v = b.dataset.view;
   $$(".voce[data-view]").forEach((x) => x.classList.toggle("is-on", x === b));
   $$(".view").forEach((s) => { s.hidden = s.id !== "v-" + v; });

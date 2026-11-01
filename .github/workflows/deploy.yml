@@ -33,6 +33,7 @@ jobs:
       - name: Controlli del modello
         run: |
           python scripts/growth.py
+          python scripts/test_http_retry.py
           python scripts/build_data.py --selftest
 
       - name: Genera i dati
@@ -52,6 +53,8 @@ jobs:
       - name: Marca le risorse con la versione del commit
         run: |
           V="${GITHUB_SHA::8}"
+          sed -i "s#mountain.css#mountain.css?v=$V#g" index.html adm/index.html
+          sed -i "s#./sezioni.js#./sezioni.js?v=$V#g" assets/app.js assets/adm.js
           sed -i "s#\"assets/app\.css\"#\"assets/app.css?v=$V\"#g; \
                   s#\"assets/app\.js\"#\"assets/app.js?v=$V\"#g" index.html
           sed -i "s#\"\.\./assets/app\.css\"#\"../assets/app.css?v=$V\"#g; \
