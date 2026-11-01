@@ -9,14 +9,12 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🍄</text></svg>">
 <script>
-  try {
-    var t = localStorage.getItem("mush-tema");
-    if (t === "chiaro" || t === "scuro") document.documentElement.dataset.tema = t;
-  } catch (e) { /* storage bloccato: resta in automatico */ }
+  document.documentElement.removeAttribute("data-tema");
+  try { localStorage.removeItem("mush-tema"); } catch (e) { /* storage bloccato */ }
 </script>
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src 'self' 'sha256-0tMeV8wWP50567kHmyqDAsyEs/BEtp2gng4RfMF0ce8=' https://www.gstatic.com https://apis.google.com;
+  script-src 'self' 'sha256-yNdWs4NnC5uYivu/sULjeHNrVVNOPxp/cgABKg87BWo=' https://www.gstatic.com https://apis.google.com;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https:;
   font-src 'self';
@@ -63,6 +61,16 @@
       </form>
       <p id="sezioni-msg" role="status" aria-live="polite">Caricamento impostazioni…</p>
       <button id="ricarica-sezioni" class="btn-ghost" type="button" hidden>Riprova</button>
+    </section>
+    <section class="admin-sezioni" aria-labelledby="luoghi-titolo">
+      <h2 id="luoghi-titolo">Località visibili</h2>
+      <p>Scegli quali località mostrare nelle viste meteo, previsioni e mappa. Le altre restano disponibili a te.</p>
+      <form id="form-luoghi">
+        <fieldset id="luoghi-campi" disabled><legend>Località disponibili</legend><div id="luoghi-opzioni"></div></fieldset>
+        <button id="salva-luoghi" class="btn-google" type="submit" disabled>Salva località</button>
+      </form>
+      <p id="luoghi-msg" role="status" aria-live="polite">Caricamento località…</p>
+      <button id="ricarica-luoghi" class="btn-ghost" type="button" hidden>Riprova</button>
     </section>
     <h2>Chi è entrato</h2>
     <div id="riassunto" class="stazione"></div>

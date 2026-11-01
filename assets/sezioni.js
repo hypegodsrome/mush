@@ -1,7 +1,8 @@
 import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-export const SEZIONI = { previsione: "Previsione", mappa: "Mappa", specie: "Specie", webcam: "Webcam", meteo: "Meteo" };
+export const SEZIONI = { home: "Home", previsione: "Previsione", mappa: "Mappa", specie: "Specie", webcam: "Webcam", meteo: "Meteo" };
 const riferimento = app => doc(getFirestore(app), "impostazioni", "sezioni");
+const riferimentoLuoghi = app => doc(getFirestore(app), "impostazioni", "luoghi");
 export const normalizza = data => Object.fromEntries(
   Object.keys(SEZIONI).map(key => [key, data?.[key] !== false]));
 export async function leggiSezioni(app) {
@@ -13,4 +14,17 @@ export function osservaSezioni(app, aggiorna, errore) {
 }
 export async function salvaSezioni(app, valori) {
   await setDoc(riferimento(app), normalizza(valori));
+}
+export const normalizzaLuoghi = (data, ids) => Object.fromEntries(
+  ids.map(id => [id, data?.[id] !== false]));
+export async function leggiLuoghi(app, ids) {
+  const snap = await getDocFromServer(riferimentoLuoghi(app));
+  return normalizzaLuoghi(snap.exists() ? snap.data() : null, ids);
+}
+export function osservaLuoghi(app, ids, aggiorna, errore) {
+  return onSnapshot(riferimentoLuoghi(app),
+    snap => aggiorna(normalizzaLuoghi(snap.data(), ids)), errore);
+}
+export async function salvaLuoghi(app, valori) {
+  await setDoc(riferimentoLuoghi(app), valori);
 }

@@ -13,19 +13,24 @@ da GitHub Actions ogni 6 ore.
 
 ### Visibilità delle sezioni
 
-L'amministratore può mostrare o nascondere Previsione, Mappa, Specie, Webcam
+L'amministratore può mostrare o nascondere Home, Previsione, Mappa, Specie, Webcam
 e Meteo dalla pagina `adm/`. Le preferenze si salvano nel documento Firestore
 `impostazioni/sezioni` e si applicano in tempo reale agli utenti collegati.
 Le sezioni nascoste restano consultabili dall'amministratore, con un'indicazione
 nel menu. Questa funzione gestisce la visibilità nell'interfaccia: i file statici
 non diventano privati. Pubblicare anche `firestore.rules` per attivare il salvataggio.
 
+Nel pannello admin si possono mostrare o nascondere anche le sette località già
+calcolate. La scelta modifica le viste Meteo, Previsione e Mappa per gli utenti;
+almeno una località deve restare visibile. Per aggiungere una località nuova
+servono coordinate e dati meteo nel generatore, oltre a un aggiornamento delle
+regole Firestore.
+
 Verifiche: `python scripts/test_http_retry.py`; per i permessi avviare
 `firebase emulators:start --only firestore --project demo-mountain` e poi
 `python scripts/test_section_rules.py`.
 
-Tema chiaro o scuro dal pulsante in alto a destra: cicla automatico → chiaro →
-scuro. In automatico segue il sistema operativo. Entrambe le palette superano
+Il tema chiaro o scuro segue automaticamente il dispositivo. Entrambe le palette superano
 WCAG AA (4,5:1) su tutti i colori di testo.
 
 ## Il modello

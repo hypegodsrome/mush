@@ -13,7 +13,7 @@ import {
   reauthenticateWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { EMAIL_ADMIN, isAdmin, elencoUtenti, bandisci, elimina } from "./registro.js";
-import { SEZIONI, leggiSezioni, salvaSezioni } from "./sezioni.js";
+import { SEZIONI, leggiSezioni, salvaSezioni, leggiLuoghi, salvaLuoghi } from "./sezioni.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -57,6 +57,7 @@ onAuthStateChanged(auth, async (u) => {
   $("#user").textContent = u.email;
   carica();
   caricaSezioni();
+  caricaLuoghi();
 });
 
 $("#btn-login").addEventListener("click", async () => {
@@ -105,6 +106,49 @@ async function caricaSezioni() {
   } catch (e) {
     $("#sezioni-msg").textContent = "Impostazioni non disponibili. Verifica la connessione e riprova.";
     $("#ricarica-sezioni").hidden = false;
+  }
+}
+
+$("#ricarica-luoghi").addEventListener("click", caricaLuoghi);
+$("#form-luoghi").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!isAdmin(auth.currentUser)) return;
+  const valori = Object.fromEntries($$("#luoghi-opzioni input").map(input => [input.name, input.checked]));
+  if (!Object.values(valori).some(Boolean)) {
+    $("#luoghi-msg").textContent = "Lascia visibile almeno una località.";
+    return;
+  }
+  $("#luoghi-campi").disabled = true;
+  $("#salva-luoghi").disabled = true;
+  $("#luoghi-msg").textContent = "Salvataggio…";
+  try {
+    await salvaLuoghi(app, valori);
+    $("#luoghi-msg").textContent = "Località salvate. Il sito si aggiorna anche per gli utenti già collegati.";
+  } catch (e) {
+    $("#luoghi-msg").textContent = "Salvataggio non riuscito. Riprova.";
+  } finally {
+    $("#luoghi-campi").disabled = false;
+    $("#salva-luoghi").disabled = false;
+  }
+});
+
+async function caricaLuoghi() {
+  $("#luoghi-campi").disabled = true;
+  $("#salva-luoghi").disabled = true;
+  $("#ricarica-luoghi").hidden = true;
+  try {
+    const risposta = await fetch("../data/spots.json");
+    if (!risposta.ok) throw new Error("Località non disponibili");
+    const catalogo = (await risposta.json()).spots;
+    const valori = await leggiLuoghi(app, catalogo.map(s => s.id));
+    $("#luoghi-opzioni").innerHTML = catalogo.map(s =>
+      `<label class="sezione-toggle"><span>${esc(s.nome)}</span><input type="checkbox" role="switch" name="${esc(s.id)}" ${valori[s.id] ? "checked" : ""}><span class="sezione-stato"></span></label>`).join("");
+    $("#luoghi-campi").disabled = false;
+    $("#salva-luoghi").disabled = false;
+    $("#luoghi-msg").textContent = "Le località disattivate non compaiono agli utenti.";
+  } catch (e) {
+    $("#luoghi-msg").textContent = "Impossibile caricare le località. Riprova.";
+    $("#ricarica-luoghi").hidden = false;
   }
 }
 

@@ -22,8 +22,10 @@ const NOMI_FATTORI = {
 const stato = { dati: null, spot: null, specie: "porcino",
                 mappa: null, base: null, strati: {} };
 let sezioniVisibili = {};
+let luoghiVisibili = {};
 let amministratore = false;
 let stopSezioni = null;
+let stopLuoghi = null;
 
 // ==========================================================================
 // Utilita'
@@ -122,6 +124,8 @@ function applicaTema(id) {
 
 function avviaTema() {
   applicaTema(temaCorrente());
+  window.matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", () => applicaTema("auto"));
   $$("[data-tema-btn]").forEach((b) => b.addEventListener("click", () => {
     const i = TEMI.findIndex((x) => x.id === temaCorrente());
     applicaTema(TEMI[(i + 1) % TEMI.length].id);
@@ -181,6 +185,8 @@ if (!configurato && inLocale) {
   onAuthStateChanged(auth, async (u) => {
     stopSezioni?.();
     stopSezioni = null;
+    stopLuoghi?.();
+    stopLuoghi = null;
     if (!u) return mostraGate();
 
     const { registraAccesso, isAdmin } = await import("./registro.js");
@@ -192,13 +198,20 @@ if (!configurato && inLocale) {
       return mostraGate("Questo account non ha più accesso al sito.");
     }
     try {
-      const { leggiSezioni, osservaSezioni } = await import("./sezioni.js");
-      sezioniVisibili = await leggiSezioni(fbApp);
+      const { leggiSezioni, osservaSezioni, leggiLuoghi, osservaLuoghi } = await import("./sezioni.js");
+      const catalogo = await carica("spots");
+      const idsLuoghi = catalogo.spots.map(s => s.id);
+      [sezioniVisibili, luoghiVisibili] = await Promise.all([
+        leggiSezioni(fbApp), leggiLuoghi(fbApp, idsLuoghi),
+      ]);
       apriApp(u, { admin: isAdmin(u), registro: !esito.errore });
       stopSezioni = osservaSezioni(fbApp, valori => {
         sezioniVisibili = valori;
         if (stato.dati) applicaSezioni();
       }, () => mostraGate("Impossibile verificare le sezioni disponibili. Ricarica la pagina per riprovare."));
+      stopLuoghi = osservaLuoghi(fbApp, idsLuoghi, valori => {
+        if (JSON.stringify(valori) !== JSON.stringify(luoghiVisibili)) location.reload();
+      }, () => mostraGate("Impossibile verificare le località disponibili. Ricarica la pagina per riprovare."));
     } catch (e) {
       mostraGate("Impossibile caricare le sezioni disponibili. Ricarica la pagina per riprovare.");
     }
@@ -253,8 +266,9 @@ async function avvia() {
       carica("stazione").catch(() => null),
       carica("webcam").catch(() => null),
     ]);
-    stato.dati = { spots: spots.spots, giorno: spots.giorno, meta, mf, stazione, webcam };
-    stato.spot = spots.spots[0];
+    const localita = spots.spots.filter(s => amministratore || luoghiVisibili[s.id] !== false);
+    stato.dati = { spots: localita, giorno: spots.giorno, meta, mf, stazione, webcam };
+    stato.spot = localita[0];
   } catch (e) {
     $("main").innerHTML = `<div class="err"><b>Dati non disponibili.</b><br>${esc(e.message)}
       <br><br>Genera i JSON con <code>python scripts/build_data.py</code>,
@@ -263,6 +277,7 @@ async function avvia() {
   }
 
   riempiSelettori();
+  renderHome();
   renderPrevisione();
   attivaTab();
   avviaLightbox();
@@ -2167,6 +2182,25 @@ function htmlStazione(st) {
       </p>`;
 }
 
+function renderHome() {
+  const st = stato.dati.stazione;
+  const wrap = $("#home-station");
+  if (!st) {
+    wrap.innerHTML = '<p class="muted">Misure della stazione temporaneamente non disponibili.</p>';
+    return;
+  }
+  const misura = (value, unit) => value == null ? "n/d"
+    : esc(String(value).replace(".", ",")) + ' <small>' + unit + '</small>';
+  wrap.innerHTML = [
+    ["Temperatura", st.temp, "°C"],
+    ["Umidità", st.umidita, "%"],
+    ["Pioggia oggi", st.pioggia_oggi, "mm"],
+    ["Vento", st.vento_kmh, "km/h"],
+  ].map(([name, value, unit]) => `<div class="livata-measure"><span>${name}</span><b>${misura(value, unit)}</b></div>`).join("");
+  $("#home-station-time").textContent = st.aggiornamento
+    ? "Ultimo aggiornamento: " + st.aggiornamento : "";
+}
+
 function renderStazione() {
   const st = stato.dati.stazione;
   $("#stazione").innerHTML = st ? htmlStazione(st)
@@ -2354,6 +2388,13 @@ function renderModello() {
 // ==========================================================================
 function attivaTab() {
   $$(".voce[data-view]").forEach((b) => b.addEventListener("click", () => mostraVista(b)));
+  $$("[data-go]").forEach((b) => b.addEventListener("click", () => {
+    const destinazione = $(".voce[data-view='" + b.dataset.go + "']");
+    if (destinazione && !destinazione.hidden) {
+      mostraVista(destinazione);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }));
 }
 
 function applicaSezioni() {
@@ -2363,6 +2404,9 @@ function applicaSezioni() {
     b.hidden = nascosta && !amministratore;
     b.classList.toggle("sezione-nascosta", nascosta && amministratore);
     b.title = nascosta && amministratore ? "Nascosta agli utenti · visibile a te come amministratore" : "";
+  });
+  $$("[data-go]").forEach(b => {
+    b.hidden = !amministratore && sezioniVisibili[b.dataset.go] === false;
   });
   const attiva = $(".voce.is-on[data-view]");
   const prima = pulsanti.find(b => !b.hidden);

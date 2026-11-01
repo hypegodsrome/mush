@@ -29,13 +29,32 @@ service cloud.firestore {
     match /impostazioni/sezioni {
       allow get: if request.auth != null;
       allow create, update: if admin()
-        && request.resource.data.keys().hasAll(['previsione', 'mappa', 'specie', 'webcam', 'meteo'])
-        && request.resource.data.keys().hasOnly(['previsione', 'mappa', 'specie', 'webcam', 'meteo'])
+        && request.resource.data.keys().hasAll(['home', 'previsione', 'mappa', 'specie', 'webcam', 'meteo'])
+        && request.resource.data.keys().hasOnly(['home', 'previsione', 'mappa', 'specie', 'webcam', 'meteo'])
+        && request.resource.data.home is bool
         && request.resource.data.previsione is bool
         && request.resource.data.mappa is bool
         && request.resource.data.specie is bool
         && request.resource.data.webcam is bool
         && request.resource.data.meteo is bool;
+    }
+
+    match /impostazioni/luoghi {
+      allow get: if request.auth != null;
+      allow create, update: if admin()
+        && request.resource.data.keys().hasAll(['livata', 'campaegli', 'roccacanterano', 'canterano', 'cicchetti', 'subiaco', 'jenne'])
+        && request.resource.data.keys().hasOnly(['livata', 'campaegli', 'roccacanterano', 'canterano', 'cicchetti', 'subiaco', 'jenne'])
+        && request.resource.data.livata is bool
+        && request.resource.data.campaegli is bool
+        && request.resource.data.roccacanterano is bool
+        && request.resource.data.canterano is bool
+        && request.resource.data.cicchetti is bool
+        && request.resource.data.subiaco is bool
+        && request.resource.data.jenne is bool
+        && (request.resource.data.livata || request.resource.data.campaegli
+            || request.resource.data.roccacanterano || request.resource.data.canterano
+            || request.resource.data.cicchetti || request.resource.data.subiaco
+            || request.resource.data.jenne);
     }
 
     match /utenti/{uid} {

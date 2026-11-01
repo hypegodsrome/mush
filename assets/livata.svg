@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 160" role="img" aria-labelledby="title">
+  <title id="title">Livata, profilo delle montagne</title>
+  <g fill="none" stroke="#fff" stroke-linejoin="round" stroke-linecap="round">
+    <path stroke-width="5" d="M24 77 83 70 137 26 158 45 180 26 191 35 220 9 258 44 269 37 317 76 395 78"/>
+    <path stroke-width="3.2" d="m139 27 11 15 11-9m30 3 13 13 11-17 7-21 14 25m16 7 9 9 9-5M18 81h155m76 0h155"/>
+  </g>
+  <text x="210" y="145" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="300" letter-spacing="8" text-anchor="middle">LIVATA</text>
+</svg>

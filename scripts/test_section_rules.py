@@ -7,7 +7,8 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 URL = "http://127.0.0.1:8080/v1/projects/demo-mountain/databases/(default)/documents/impostazioni/sezioni"
-DEFAULTS = {key: {"booleanValue": True} for key in ("previsione", "mappa", "specie", "webcam", "meteo")}
+PLACES_URL = URL.replace("/sezioni", "/luoghi")
+DEFAULTS = {key: {"booleanValue": True} for key in ("home", "previsione", "mappa", "specie", "webcam", "meteo")}
 
 
 def token(email, verified=True):
@@ -21,13 +22,13 @@ def token(email, verified=True):
     return enc({"alg": "none", "typ": "JWT"}) + "." + enc(claims) + "."
 
 
-def request(method, email=None, fields=None, verified=True):
+def request(method, email=None, fields=None, verified=True, url=URL):
     headers = {"Content-Type": "application/json"}
     if email:
         headers["Authorization"] = "Bearer " + token(email, verified)
     body = json.dumps({"fields": fields}).encode() if fields is not None else None
     try:
-        with urlopen(Request(URL, data=body, headers=headers, method=method), timeout=10) as res:
+        with urlopen(Request(url, data=body, headers=headers, method=method), timeout=10) as res:
             return res.status
     except HTTPError as exc:
         return exc.code
@@ -44,6 +45,16 @@ class SectionRulesTests(unittest.TestCase):
         self.assertEqual(request("PATCH", "eug2002@gmail.com", {**DEFAULTS, "extra": {"booleanValue": True}}), 403)
         self.assertEqual(request("DELETE", "visitor@example.test"), 403)
         self.assertEqual(request("PATCH", "eug2002@gmail.com", {**DEFAULTS, "specie": {"booleanValue": False}}), 200)
+
+    def test_place_permissions(self):
+        fields = {key: {"booleanValue": True} for key in
+                  ("livata", "campaegli", "roccacanterano", "canterano", "cicchetti", "subiaco", "jenne")}
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, url=PLACES_URL), 200)
+        self.assertEqual(request("GET", "visitor@example.test", url=PLACES_URL), 200)
+        self.assertEqual(request("PATCH", "visitor@example.test", fields, url=PLACES_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, verified=False, url=PLACES_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com",
+                                 {key: {"booleanValue": False} for key in fields}, url=PLACES_URL), 403)
 
 
 if __name__ == "__main__":

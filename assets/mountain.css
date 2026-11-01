@@ -48,6 +48,38 @@ body, button, input, select, textarea, h1, h2, h3, h4, code, pre,
 .stazione-previsione-wrap { margin: 28px 0; }
 .stazione-previsione-wrap h2 { margin: 0 0 8px; }
 .stazione-previsione-wrap > p { margin: 0 0 16px; }
+.livata-hero { position: relative; isolation: isolate; min-height: clamp(520px, 60vw, 700px); overflow: hidden; border-radius: 32px; color: #FFFFFF; background: #3B4C5E; display: flex; flex-direction: column; justify-content: center; padding: clamp(28px, 5vw, 70px); }
+.livata-photo, .livata-shade { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; }
+.livata-photo { object-fit: cover; object-position: center; }
+.livata-shade { background: linear-gradient(90deg, #142b3fe8 0%, #142b3fb9 44%, #142b3f2e 100%), linear-gradient(0deg, #142b3f80, transparent 45%); }
+.livata-hero-content { max-width: 660px; }
+.livata-kicker { font-size: .7rem; font-weight: 600; letter-spacing: .19em; }
+.livata-logo { display: block; width: clamp(150px, 19vw, 240px); height: auto; margin: 30px 0 20px; }
+.livata-hero h1 { font-size: clamp(3.2rem, 7vw, 6.5rem); line-height: .97; letter-spacing: -.075em; margin: 0 0 24px; }
+.livata-hero p { max-width: 450px; font-size: clamp(.95rem, 1.3vw, 1.1rem); line-height: 1.6; margin: 0 0 32px; }
+.livata-primary { background: #FFFFFF; color: #2A2A2A; border: 0; border-radius: 100px; padding: 14px 22px; font-weight: 600; display: inline-flex; align-items: center; gap: 32px; cursor: pointer; }
+.livata-primary:hover { background: #A9C2D9; }
+.livata-photo-credit { position: absolute; right: 28px; bottom: 22px; font-size: .65rem; color: #FFFFFF; text-align: right; }
+.livata-intro { display: flex; align-items: end; justify-content: space-between; gap: 36px; padding: 55px 0 28px; }
+.livata-intro .eyebrow, .livata-station .eyebrow { margin: 0 0 12px; }
+.livata-intro h2, .livata-station h2 { margin: 0; font-size: clamp(1.7rem, 3.4vw, 3rem); }
+.livata-intro p { max-width: 320px; margin: 0; color: var(--ink-2); line-height: 1.6; }
+.livata-shortcuts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.livata-shortcut { min-width: 0; min-height: 160px; border: 1px solid var(--line); border-radius: 24px; padding: 20px; background: var(--card); color: var(--ink); text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; align-items: start; }
+.livata-shortcut:hover { box-shadow: var(--sh-2); transform: translateY(-2px); }
+.livata-shortcut-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: var(--bg-2); color: var(--ink-2); font-size: 1.4rem; }
+.livata-shortcut b, .livata-shortcut small { display: block; }
+.livata-shortcut b { font-size: 1rem; }
+.livata-shortcut small { margin-top: 4px; color: var(--ink-3); font-size: .77rem; }
+.livata-shortcut > span:last-child { align-self: end; margin-top: -34px; color: var(--ink-2); }
+.livata-station { margin-top: 56px; border-radius: 28px; padding: clamp(22px, 3vw, 38px); background: var(--card); border: 1px solid var(--line); }
+.livata-station-head { display: flex; align-items: end; justify-content: space-between; gap: 15px; margin-bottom: 28px; }
+.livata-station-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.livata-measure { border-radius: 18px; padding: 18px; background: var(--bg); min-width: 0; }
+.livata-measure span, .livata-measure b { display: block; }
+.livata-measure span { color: var(--ink-2); font-size: .8rem; }
+.livata-measure b { font-size: clamp(1.25rem, 2vw, 2rem); margin-top: 12px; }
+.livata-measure small { font-size: .7em; font-weight: 400; }
 button, select, input { touch-action: manipulation; }
 button, select, .btn-ghost, .btn-google { min-height: 44px; }
 button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid #5984aa; outline-offset: 3px; }
@@ -61,6 +93,7 @@ button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid
 .voce-txt small { font-size: .68rem; margin-top: 3px; }
 .voce.is-on { background: var(--card); border-color: var(--line); box-shadow: var(--sh-1); }
 .voce-ic { background: transparent; }
+.voce-ic svg { display: block; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .rail-piede { flex-wrap: wrap; }
 .rail-piede .user { overflow-wrap: anywhere; min-width: 0; }
 main { max-width: 1440px; padding: 28px clamp(20px, 3vw, 48px) 64px; }
@@ -102,20 +135,38 @@ body.webcam-open { overflow: hidden; }
 .gate-card { border-radius: 32px; box-shadow: 0 30px 100px #0004; }
 .gate h1 { letter-spacing: -.07em; }
 @media (max-width: 900px) {
+  .livata-hero { min-height: 570px; }
+  .livata-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .livata-station-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guscio { grid-template-columns: minmax(0, 1fr); }
   main { padding: 20px 20px 110px; }
-  .rail { padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); gap: 2px; overflow: visible; background: var(--card); backdrop-filter: none; }
-  .rail > .voce { flex: 1; min-width: 0; padding: 6px 2px; border-radius: 14px; }
-  .voce-txt b { font-size: .65rem; }
-  .rail .voce-ic { width: 28px; height: 24px; font-size: 1rem; }
+  .rail { position: fixed; inset: auto 0 0; width: 100%; height: calc(58px + env(safe-area-inset-bottom)); max-height: none; z-index: 2000; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: stretch; gap: 0; padding: 3px 5px calc(3px + env(safe-area-inset-bottom)); overflow: clip; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px #2a2a2a16; backdrop-filter: none; }
+  .rail > .voce { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; width: 100%; height: 52px; min-height: 0; gap: 1px; padding: 3px 0; border-radius: 10px; }
+  .voce-txt { width: 100%; text-align: center; }
+  .voce-txt b { font-size: .62rem; line-height: 1.1; white-space: nowrap; }
+  .rail .voce-ic { width: 22px; height: 22px; min-height: 22px; font-size: 1rem; }
+  .rail .voce-ic svg { width: 19px; height: 19px; }
+  .rail .voce.is-on .voce-ic { background: transparent; }
+  .rail-brand, .rail-et, .voce-txt small, .voce-fr { display: none; }
+  body { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
   .rail-piede { position: fixed; top: max(16px, env(safe-area-inset-top)); right: 14px; bottom: auto; padding: 0; gap: 8px; border: 0; background: transparent; box-shadow: none; flex-wrap: nowrap; }
   .rail-piede button { width: 44px; height: 44px; min-width: 44px; padding: 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--sh-1); }
   .mountain-heading { padding-right: 112px; min-height: 44px; margin-bottom: 16px; }
   .mountain-coordinate { display: none; }
   .mountain-wordmark span { display: none; }
-  .mappa-scena { height: calc(100dvh - 170px); min-height: 260px; }
+  .mappa-scena { height: calc(100dvh - 116px - env(safe-area-inset-bottom)); min-height: 260px; }
 }
 @media (max-width: 540px) {
+  .livata-hero { min-height: 575px; padding: 28px 22px 55px; border-radius: 24px; }
+  .livata-logo { width: 160px; }
+  .livata-hero h1 { font-size: clamp(3rem, 12vw, 4.2rem); }
+  .livata-photo-credit { right: 20px; bottom: 16px; max-width: 190px; font-size: .58rem; }
+  .livata-intro { display: block; padding-top: 40px; }
+  .livata-intro p { margin-top: 16px; }
+  .livata-shortcuts { grid-template-columns: minmax(0, 1fr); }
+  .livata-shortcut { min-height: 120px; }
+  .livata-station-head { display: block; }
+  .livata-station-head > span { display: block; margin-top: 12px; }
   main { padding-left: 14px; padding-right: 14px; }
   .controls { padding: 16px; gap: 14px; }
   .hero { padding: 22px; gap: 18px; }
