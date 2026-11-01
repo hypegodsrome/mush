@@ -267,6 +267,7 @@ async function avvia() {
   attivaTab();
   avviaLightbox();
   applicaSezioni();
+  mostraVista($(".voce.is-on[data-view]"));
 }
 
 function riempiSelettori() {

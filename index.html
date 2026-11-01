@@ -91,22 +91,7 @@
 
   <span class="rail-et">Menù di navigazione</span>
 
-  <button class="voce is-on" data-view="previsione" type="button">
-    <i class="voce-ic">◎</i>
-    <span class="voce-txt"><b>Previsione</b><small>Punteggio per zona e specie</small></span>
-    <em class="voce-fr">›</em>
-  </button>
-  <button class="voce" data-view="mappa" type="button">
-    <i class="voce-ic">🗺</i>
-    <span class="voce-txt"><b>Mappa</b><small>Boschi, pioggia, crescita</small></span>
-    <em class="voce-fr">›</em>
-  </button>
-  <button class="voce" data-view="specie" type="button">
-    <i class="voce-ic">&#127812;</i>
-    <span class="voce-txt"><b>Specie</b><small>Cosa si trova, e cosa le somiglia</small></span>
-    <em class="voce-fr">&#8250;</em>
-  </button>
-  <button class="voce" data-view="webcam" type="button">
+  <button class="voce is-on" data-view="webcam" type="button">
     <i class="voce-ic">📷</i>
     <span class="voce-txt"><b>Webcam</b><small>Livata e dintorni, a richiesta</small></span>
     <em class="voce-fr">›</em>
@@ -115,6 +100,21 @@
     <i class="voce-ic">🌡</i>
     <span class="voce-txt"><b>Meteo</b><small>Stazione e statistiche per zona</small></span>
     <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="mappa" type="button">
+    <i class="voce-ic">🗺</i>
+    <span class="voce-txt"><b>Mappa</b><small>Boschi, pioggia, crescita</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="previsione" type="button">
+    <i class="voce-ic">◎</i>
+    <span class="voce-txt"><b>Previsione</b><small>Punteggio per zona e specie</small></span>
+    <em class="voce-fr">›</em>
+  </button>
+  <button class="voce" data-view="specie" type="button">
+    <i class="voce-ic">&#127812;</i>
+    <span class="voce-txt"><b>Specie</b><small>Cosa si trova, e cosa le somiglia</small></span>
+    <em class="voce-fr">&#8250;</em>
   </button>
 
   <a class="voce voce-adm" id="link-adm" href="adm/" hidden>
@@ -136,7 +136,7 @@
 <p id="sezioni-vuote" class="controls" role="status" hidden>Le sezioni del sito sono temporaneamente non disponibili.</p>
 
 <!-- ---------- PREVISIONE ---------- -->
-<section id="v-previsione" class="view">
+<section id="v-previsione" class="view" hidden>
   <div class="controls">
     <label>Zona
       <select id="sel-spot"></select>
@@ -380,7 +380,7 @@
 </section>
 
 <!-- ---------- WEBCAM ---------- -->
-<section id="v-webcam" class="view" hidden>
+<section id="v-webcam" class="view">
   <p class="muted small">
     Le immagini si caricano solo quando apri questa scheda o premi Aggiorna.
     Nessun aggiornamento automatico.

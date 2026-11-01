@@ -79,11 +79,14 @@ h2 { letter-spacing: -.045em; margin-top: 36px; }
 .cam .cam-name { font-size: .95rem; }
 .cam .cam-sub { font-size: .78rem; color: #FFFFFF; }
 .cam-expand { position: absolute; top: 12px; right: 12px; background: #2a2a2ad9; color: #FFFFFF; padding: 9px 12px; border-radius: 100px; font-size: .75rem; pointer-events: none; }
+.cam .cam-msg { display: none; }
+.cam .cam-shot[data-state="err"] ~ .cam-msg { display: block; top: 12px; bottom: auto; right: 12px; left: 12px; background: #2A2A2A; color: #FFFFFF; }
 .cam.is-video::after { pointer-events: none; }
 .cam-actions { flex-wrap: wrap; }
 .lb { background: #2A2A2A; color: #FFFFFF; grid-template-rows: auto minmax(0, 1fr) auto; }
-.lb-bar { padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); border-color: #ffffff33; }
-.lb-bar button { color: #FFFFFF; border-color: #ffffff55; flex-shrink: 0; }
+.lb-bar { position: sticky; top: 0; z-index: 2; background: #2A2A2A; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); border-color: #ffffff33; }
+.lb-bar button { color: #FFFFFF; background: #3B4C5E; border-color: #A9C2D9; flex-shrink: 0; }
+.lb-bar button:hover, .lb-bar button:focus-visible { color: #FFFFFF; background: #52687d; }
 .lb-txt span { color: #A9C2D9; }
 .lb-media { min-height: 0; min-width: 0; display: grid; }
 #lb-img, #lb-video { width: 100%; height: 100%; min-height: 0; border: 0; object-fit: contain; }
@@ -100,9 +103,9 @@ body.webcam-open { overflow: hidden; }
   .rail > .voce { flex: 1; min-width: 0; padding: 6px 2px; border-radius: 14px; }
   .voce-txt b { font-size: .65rem; }
   .rail .voce-ic { width: 28px; height: 24px; font-size: 1rem; }
-  .rail-piede { position: fixed; top: max(10px, env(safe-area-inset-top)); right: 12px; bottom: auto; padding: 3px; border: 0; border-radius: 100px; background: var(--card); box-shadow: var(--sh-1); flex-wrap: nowrap; }
-  .rail-piede button { min-width: 44px; }
-  .mountain-heading { padding-right: 92px; min-height: 44px; margin-bottom: 16px; }
+  .rail-piede { position: fixed; top: max(16px, env(safe-area-inset-top)); right: 14px; bottom: auto; padding: 0; gap: 8px; border: 0; background: transparent; box-shadow: none; flex-wrap: nowrap; }
+  .rail-piede button { width: 44px; height: 44px; min-width: 44px; padding: 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--sh-1); }
+  .mountain-heading { padding-right: 112px; min-height: 44px; margin-bottom: 16px; }
   .mountain-coordinate { display: none; }
   .mountain-wordmark span { display: none; }
   .mappa-scena { height: calc(100dvh - 170px); min-height: 260px; }
@@ -112,11 +115,16 @@ body.webcam-open { overflow: hidden; }
   .controls { padding: 16px; gap: 14px; }
   .hero { padding: 22px; gap: 18px; }
   .hero-txt { flex-basis: 100%; }
-  .cams { grid-template-columns: minmax(0, 1fr); }
-  .cams-off { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cams, .cams-off { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cam, .cams-off .cam { min-width: 0; border-radius: 16px; }
+  .cam .cam-head { padding: 10px; }
+  .cam .cam-name { font-size: .75rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .cam .cam-sub { display: none; }
+  .cam-expand { display: none; }
+  .cam .cam-shot[data-state="err"] ~ .cam-msg { top: 34px; }
   .lb-bar { flex-wrap: wrap; gap: 8px; }
   .lb-txt { flex-basis: calc(100% - 60px); order: 0; }
-  #lb-close { order: 1; }
+  #lb-close { order: 1; width: 48px; font-size: 1.2rem; }
   #lb-full { order: 2; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
