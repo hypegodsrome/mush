@@ -251,14 +251,14 @@ body.is-home .mountain-heading { display: none; }
 body.is-home #sezioni-vuote:not([hidden]) { margin: 16px clamp(16px, 4vw, 64px); }
 #v-home .livata-hero {
   display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; width: 100%; min-height: 100vh; min-height: 100svh;
-  padding: 0; border-radius: 0; overflow: hidden; background: var(--home-hero, #3B4C5E);
+  padding: 0; border-radius: 0; overflow: hidden; background: linear-gradient(120deg, color-mix(in srgb, var(--home-hero, #3B4C5E) 78%, #A9C2D9), var(--home-hero, #3B4C5E));
 }
 #v-home .livata-backdrop, #v-home .livata-photo {
   position: absolute; inset: 0; width: 100%; height: 100%; display: block;
   z-index: 0; max-height: none; order: unset; pointer-events: none;
 }
-#v-home .livata-backdrop { object-fit: cover; filter: blur(30px) brightness(.64); transform: scale(1.1); }
-#v-home .livata-photo { z-index: 1; object-fit: contain; object-position: center; background: transparent; animation: none; }
+#v-home .livata-backdrop { display: none; }
+#v-home .livata-photo { z-index: 1; left: 50%; right: auto; width: auto; max-width: 100%; object-fit: contain; object-position: center; background: transparent; transform: translateX(-50%); mask-image: linear-gradient(90deg, transparent 0%, #000 3%, #000 97%, transparent 100%); }
 body.is-home #v-home .livata-photo { background: transparent; }
 #v-home .livata-shade {
   position: absolute; display: block; inset: 0; z-index: 2; pointer-events: none;
@@ -292,7 +292,7 @@ body.is-home #v-home .livata-account .btn-ghost { background: var(--home-card); 
   body[data-home-stagione="primavera"] #v-home .livata-hero,
   body[data-home-stagione="estate"] #v-home .livata-hero { aspect-ratio: 4 / 3; }
   #v-home .livata-backdrop { display: none; }
-  #v-home .livata-photo { object-fit: cover; max-height: none; }
+  #v-home .livata-photo { left: 0; right: 0; width: 100%; max-width: none; object-fit: cover; max-height: none; transform: none; mask-image: none; }
   #v-home .livata-hero-content { position: absolute; inset: 0; min-height: 0; height: 100%; padding: 18px 20px 26px; }
   #v-home .livata-logo { width: clamp(150px, 51vw, 240px); margin: 12px auto; }
   #v-home .livata-hero p { font-size: clamp(.8rem, 3.4vw, 1rem); margin-bottom: 10px; }
