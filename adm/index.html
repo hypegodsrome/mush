@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mountain — Amministrazione</title>
+<title>Monte Livata — Amministrazione</title>
 <meta name="theme-color" content="#12100d">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex, nofollow">
@@ -43,7 +43,7 @@
 
 <div id="app" hidden>
   <header class="top">
-    <div class="brand"><span class="brand-mark">△</span> Mountain · admin</div>
+    <div class="brand">Monte Livata · admin</div>
     <div class="top-right">
       <span id="user" class="user"></span>
       <a class="btn-ghost" href="../">Sito</a>
@@ -71,6 +71,36 @@
       </form>
       <p id="luoghi-msg" role="status" aria-live="polite">Caricamento località…</p>
       <button id="ricarica-luoghi" class="btn-ghost" type="button" hidden>Riprova</button>
+    </section>
+    <section class="admin-sezioni" aria-labelledby="webcam-titolo">
+      <h2 id="webcam-titolo">Webcam visibili</h2>
+      <p>Disattiva una webcam per nasconderla. Le webcam temporaneamente non attive sono nascoste agli utenti e tornano visibili da sole quando riprendono a funzionare.</p>
+      <form id="form-webcam">
+        <fieldset id="webcam-campi" disabled><legend>Webcam disponibili</legend><div id="webcam-opzioni"></div></fieldset>
+        <button id="salva-webcam" class="btn-google" type="submit" disabled>Salva webcam</button>
+      </form>
+      <p id="webcam-msg" role="status" aria-live="polite">Caricamento webcam…</p>
+      <button id="ricarica-webcam" class="btn-ghost" type="button" hidden>Riprova</button>
+    </section>
+    <section class="admin-sezioni" aria-labelledby="contenuti-titolo">
+      <h2 id="contenuti-titolo">Testi del sito</h2>
+      <p>Modifica titoli, descrizioni e pulsanti delle pagine. Il salvataggio pubblica i testi anche per chi ha già il sito aperto.</p>
+      <form id="form-contenuti">
+        <fieldset id="contenuti-campi" disabled><legend>Contenuti delle pagine</legend><div id="contenuti-opzioni"></div></fieldset>
+        <button id="salva-contenuti" class="btn-google" type="submit" disabled>Pubblica i testi</button>
+      </form>
+      <p id="contenuti-msg" role="status" aria-live="polite">Caricamento testi…</p>
+      <button id="ricarica-contenuti" class="btn-ghost" type="button" hidden>Riprova</button>
+    </section>
+    <section class="admin-sezioni" aria-labelledby="immagini-titolo">
+      <h2 id="immagini-titolo">Foto della Home</h2>
+      <p>Inserisci l'indirizzo HTTPS di una foto per ogni stagione. La Home sceglie automaticamente la stagione corrente. Puoi ripristinare le foto incluse nel sito.</p>
+      <form id="form-immagini">
+        <fieldset id="immagini-campi" disabled><legend>Immagini stagionali</legend><div id="immagini-opzioni"></div></fieldset>
+        <button id="salva-immagini" class="btn-google" type="submit" disabled>Pubblica le foto</button>
+      </form>
+      <p id="immagini-msg" role="status" aria-live="polite">Caricamento foto…</p>
+      <button id="ricarica-immagini" class="btn-ghost" type="button" hidden>Riprova</button>
     </section>
     <h2>Chi è entrato</h2>
     <div id="riassunto" class="stazione"></div>

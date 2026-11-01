@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mountain — Funghi e meteo dei Monti Simbruini</title>
+<title>Monte Livata — Webcam, meteo e mappe</title>
 <meta name="description" content="Previsione di crescita dei funghi sui Monti Simbruini: modello a sei fattori, stazione meteo di Monte Livata, mappa nazionale e webcam in diretta.">
 <meta name="theme-color" content="#3B4C5E">
 <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -58,8 +58,7 @@
 <!-- ==================== GATE DI ACCESSO ==================== -->
 <div id="gate" class="gate" hidden>
   <div class="gate-card">
-    <div class="gate-mark">△</div>
-    <h1>Mountain</h1>
+    <h1><img class="gate-livata-logo" src="assets/livata.svg" alt="Monte Livata"></h1>
     <p class="gate-sub">Funghi, meteo e webcam dei Monti Simbruini</p>
     <button id="btn-login" class="btn-google">
       <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
@@ -84,7 +83,7 @@
 <div class="guscio">
 
 <nav class="rail" id="rail">
-  <div class="rail-brand"><span class="brand-mark">△</span> Mountain</div>
+  <div class="rail-brand"><img class="site-livata-logo" src="assets/livata.svg" alt="Monte Livata"></div>
 
   <span class="rail-et">Menù di navigazione</span>
 
@@ -133,20 +132,22 @@
 </nav>
 
 <main>
-<header class="mountain-heading"><a href="./" class="mountain-wordmark">Mountain<span> / SIMBRUINI</span></a><div class="mountain-head-actions"><span class="mountain-coordinate">41°55′ N · 13°08′ E</span><a id="home-adm" class="btn-ghost" href="adm/" hidden>Admin</a><button id="btn-home-logout" class="btn-ghost" type="button" aria-label="Esci">Esci</button></div></header>
+<header class="mountain-heading"><a href="./" class="mountain-wordmark" aria-label="Monte Livata, torna alla Home"><img class="site-livata-logo" src="assets/livata.svg" alt="Monte Livata"></a><span class="mountain-coordinate">41°55′ N · 13°08′ E</span></header>
 <p id="sezioni-vuote" class="controls" role="status" hidden>Le sezioni del sito sono temporaneamente non disponibili.</p>
 
 <section id="v-home" class="view">
   <div class="livata-hero">
+    <img id="home-season-backdrop" class="livata-backdrop" src="assets/seasons/autunno.png" alt="" aria-hidden="true">
     <img id="home-season-photo" class="livata-photo" src="assets/seasons/autunno.png" alt="Monte Livata in autunno">
     <div class="livata-shade"></div>
     <div class="livata-hero-content">
       <span class="livata-kicker">MONTI SIMBRUINI · LAZIO</span>
-      <img class="livata-logo" src="assets/livata.svg" alt="Livata">
-      <h1>Monte Livata,<br>qui e ora.</h1>
+      <img class="livata-logo" src="assets/livata.svg" alt="Logo Monte Livata">
+      <h1>Monte Livata</h1>
       <p>Paesaggi, webcam, meteo e sentieri dei Monti Simbruini.</p>
-      <button class="livata-primary" type="button" data-go="webcam">Guarda le webcam <span aria-hidden="true">↗</span></button>
+      <button class="livata-primary" type="button" data-go="webcam"><span class="cms-label">Guarda le webcam</span> <span aria-hidden="true">↗</span></button>
     </div>
+    <span class="livata-scroll-cue" aria-hidden="true">SCOPRI <span>↓</span></span>
   </div>
   <div class="livata-intro">
     <div><span class="eyebrow">ESPLORA IL TERRITORIO</span><h2>La montagna, a portata di mano.</h2></div>
@@ -156,6 +157,7 @@
     <button class="livata-shortcut" type="button" data-go="meteo"><span class="livata-shortcut-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14.5V5a3 3 0 0 1 6 0v9.5a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/></svg></span><span class="livata-shortcut-copy"><b>Stazione meteo</b><small>Le misure attuali da Monte Livata</small></span><span class="livata-shortcut-arrow" aria-hidden="true">↗</span></button>
     <button class="livata-shortcut" type="button" data-go="mappa"><span class="livata-shortcut-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 5 7-2 6 2 7-2v16l-7 2-6-2-7 2zM9 3v16m6-14v16"/></svg></span><span class="livata-shortcut-copy"><b>Esplora la mappa</b><small>Luoghi, sentieri e condizioni</small></span><span class="livata-shortcut-arrow" aria-hidden="true">↗</span></button>
   </div>
+  <div class="livata-account"><a id="home-adm" class="btn-ghost" href="adm/" hidden>Admin</a><button id="btn-home-logout" class="btn-ghost" type="button" aria-label="Esci">Esci</button></div>
 </section>
 
 <!-- ---------- PREVISIONE ---------- -->
@@ -196,13 +198,13 @@
 
   <div id="clima"></div>
 
-  <h2>Prossimi 16 giorni</h2>
+  <h2 id="previsione-giorni-titolo">Prossimi 16 giorni</h2>
   <div id="strip" class="strip"></div>
 
-  <h2>Perché questo punteggio</h2>
+  <h2 id="previsione-punteggio-titolo">Perché questo punteggio</h2>
   <div id="fattori" class="fattori"></div>
 
-  <h2>Confronto fra le zone</h2>
+  <h2 id="previsione-confronto-titolo">Confronto fra le zone</h2>
   <div id="classifica" class="classifica"></div>
 </section>
 
@@ -410,26 +412,12 @@
 
 <!-- ---------- WEBCAM ---------- -->
 <section id="v-webcam" class="view" hidden>
-  <p class="muted small">
-    Le immagini si caricano solo quando apri questa scheda o premi Aggiorna.
-    Nessun aggiornamento automatico.
-  </p>
-  <p class="muted small">Tocca un'immagine per vederla a tutto schermo.</p>
   <div class="cam-actions">
     <button id="btn-cams" class="btn" type="button">Aggiorna immagini</button>
     <span id="cam-time" class="muted small"></span>
   </div>
   <div id="cams" class="cams"></div>
 
-  <div id="cams-off-wrap" hidden>
-    <h2>Non attive (<span id="cams-off-n"></span>)</h2>
-    <p class="muted small">
-      Impianti sciistici: rispondono ma servono un fotogramma fermo da mesi.
-      Lo stato viene ricontrollato a ogni aggiornamento dei dati: quando
-      ripartono tornano su, a dimensione piena, da sole.
-    </p>
-    <div id="cams-off" class="cams cams-off"></div>
-  </div>
 </section>
 
 <!-- ---------- METEO ---------- -->
@@ -441,7 +429,7 @@
   </div>
 
   <span class="eyebrow">Ora per ora</span>
-  <h2>Che tempo fa, e quando</h2>
+  <h2 id="meteo-orario-titolo">Che tempo fa, e quando</h2>
   <p class="muted small">Trascina la barra, o premi play: la temperatura, la
      pioggia e il vento di tutte le zone si spostano all'ora scelta.</p>
 
@@ -469,7 +457,7 @@
   <div id="previsioni" class="previsioni"></div>
 
   <span class="eyebrow">Confronto</span>
-  <h2>Tutte le zone oggi</h2>
+  <h2 id="meteo-confronto-titolo">Tutte le zone oggi</h2>
   <p class="muted small">Tocca una riga per aprirne i dati. L'ultima colonna
      è il punteggio di crescita per la specie scelta.</p>
   <div id="confronto" class="confronto"></div>
@@ -477,7 +465,7 @@
   <h2>Dati previsti — <span id="meteo-zona"></span></h2>
   <div id="stat-modello" class="stazione"></div>
 
-  <h2>Pioggia passata: le fonti a confronto</h2>
+  <h2 id="meteo-fonti-titolo">Pioggia passata: le fonti a confronto</h2>
   <p class="muted small">
     Il modello non si fida di una fonte sola. Tre serie indipendenti sullo
     stesso periodo, fuse giorno per giorno con la mediana. Se litigano fra loro,
@@ -485,7 +473,7 @@
   </p>
   <div id="fonti" class="stazione"></div>
 
-  <h2>Pioggia e temperatura — 30 giorni + previsione</h2>
+  <h2 id="meteo-grafico-titolo">Pioggia e temperatura — 30 giorni + previsione</h2>
   <div id="chart" class="chart"></div>
   <p class="muted small">
     Barre: pioggia giornaliera (mm). Linea: temperatura media (°C).

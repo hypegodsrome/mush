@@ -13,7 +13,10 @@ import {
   reauthenticateWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { EMAIL_ADMIN, isAdmin, elencoUtenti, bandisci, elimina } from "./registro.js";
-import { SEZIONI, leggiSezioni, salvaSezioni, leggiLuoghi, salvaLuoghi } from "./sezioni.js";
+import { SEZIONI, leggiSezioni, salvaSezioni, leggiLuoghi, salvaLuoghi,
+  leggiWebcam, salvaWebcam } from "./sezioni.js";
+import { CONTENUTI, leggiContenuti, salvaContenuti,
+  FOTO_PREDEFINITE, leggiImmagini, salvaImmagini } from "./contenuti.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -58,6 +61,9 @@ onAuthStateChanged(auth, async (u) => {
   carica();
   caricaSezioni();
   caricaLuoghi();
+  caricaWebcam();
+  caricaContenuti();
+  caricaImmagini();
 });
 
 $("#btn-login").addEventListener("click", async () => {
@@ -149,6 +155,193 @@ async function caricaLuoghi() {
   } catch (e) {
     $("#luoghi-msg").textContent = "Impossibile caricare le località. Riprova.";
     $("#ricarica-luoghi").hidden = false;
+  }
+}
+
+$("#ricarica-webcam").addEventListener("click", caricaWebcam);
+$("#form-webcam").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!isAdmin(auth.currentUser)) return;
+  const valori = Object.fromEntries($$("#webcam-opzioni input").map(input => [input.name, input.checked]));
+  $("#webcam-campi").disabled = true;
+  $("#salva-webcam").disabled = true;
+  $("#webcam-msg").textContent = "Salvataggio…";
+  try {
+    await salvaWebcam(app, valori);
+    $("#webcam-msg").textContent = "Webcam salvate. Il sito si aggiorna anche per gli utenti già collegati.";
+  } catch (e) {
+    $("#webcam-msg").textContent = "Salvataggio non riuscito. Riprova.";
+  } finally {
+    $("#webcam-campi").disabled = false;
+    $("#salva-webcam").disabled = false;
+  }
+});
+
+async function caricaWebcam() {
+  $("#webcam-campi").disabled = true;
+  $("#salva-webcam").disabled = true;
+  $("#ricarica-webcam").hidden = true;
+  try {
+    const risposta = await fetch("../data/webcam.json", { cache: "no-cache" });
+    if (!risposta.ok) throw new Error("Webcam non disponibili");
+    const catalogo = (await risposta.json()).cam || [];
+    const valori = await leggiWebcam(app, catalogo.map(c => c.id));
+    $("#webcam-opzioni").innerHTML = catalogo.map(c =>
+      `<label class="sezione-toggle"><span>${esc(c.nome)}<small class="admin-cam-state">${c.viva ? "Attiva" : "Non attiva"}</small></span><input type="checkbox" role="switch" name="${esc(c.id)}" ${valori[c.id] ? "checked" : ""}><span class="sezione-stato"></span></label>`).join("");
+    $("#webcam-campi").disabled = false;
+    $("#salva-webcam").disabled = false;
+    $("#webcam-msg").textContent = "Le webcam disattivate non compaiono agli utenti.";
+  } catch (e) {
+    $("#webcam-msg").textContent = "Impossibile caricare le webcam. Riprova.";
+    $("#ricarica-webcam").hidden = false;
+  }
+}
+
+$("#ricarica-contenuti").addEventListener("click", caricaContenuti);
+$("#contenuti-opzioni").addEventListener("click", e => {
+  const reset = e.target.closest("button[data-reset]");
+  if (!reset) return;
+  const voce = CONTENUTI.find(c => c.chiave === reset.dataset.reset);
+  const campo = $(`#contenuti-opzioni [name="${reset.dataset.reset}"]`);
+  if (voce && campo) { campo.value = voce.predefinito; campo.focus(); }
+});
+$("#form-contenuti").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!isAdmin(auth.currentUser)) return;
+  const testi = {};
+  for (const voce of CONTENUTI) {
+    const valore = $(`#contenuti-opzioni [name="${voce.chiave}"]`)?.value.trim();
+    if (!valore) {
+      $("#contenuti-msg").textContent = `Compila “${voce.etichetta}” nella pagina ${voce.sezione}.`;
+      return;
+    }
+    if (valore !== voce.predefinito) testi[voce.chiave] = valore;
+  }
+  $("#contenuti-campi").disabled = true;
+  $("#salva-contenuti").disabled = true;
+  $("#contenuti-msg").textContent = "Pubblicazione…";
+  try {
+    await salvaContenuti(app, testi);
+    $("#contenuti-msg").textContent = "Testi pubblicati. Apri il sito per verificarli.";
+  } catch (e) {
+    $("#contenuti-msg").textContent = "Pubblicazione non riuscita. Riprova.";
+  } finally {
+    $("#contenuti-campi").disabled = false;
+    $("#salva-contenuti").disabled = false;
+  }
+});
+
+async function caricaContenuti() {
+  $("#contenuti-campi").disabled = true;
+  $("#salva-contenuti").disabled = true;
+  $("#ricarica-contenuti").hidden = true;
+  try {
+    const testi = await leggiContenuti(app);
+    const contenitore = $("#contenuti-opzioni");
+    contenitore.replaceChildren();
+    for (const sezione of Object.keys(SEZIONI)) {
+      const gruppo = document.createElement("details");
+      gruppo.className = "admin-content-group";
+      if (sezione === "home") gruppo.open = true;
+      const titolo = document.createElement("summary");
+      titolo.textContent = SEZIONI[sezione];
+      gruppo.append(titolo);
+      for (const voce of CONTENUTI.filter(c => c.sezione === sezione)) {
+        const riga = document.createElement("div");
+        riga.className = "admin-content-row";
+        const etichetta = document.createElement("label");
+        etichetta.textContent = voce.etichetta;
+        const campo = document.createElement("textarea");
+        campo.name = voce.chiave;
+        campo.maxLength = 500;
+        campo.rows = voce.predefinito.length > 85 ? 3 : 2;
+        campo.value = testi[voce.chiave] ?? voce.predefinito;
+        etichetta.append(campo);
+        const reset = document.createElement("button");
+        reset.type = "button";
+        reset.className = "btn-ghost";
+        reset.dataset.reset = voce.chiave;
+        reset.textContent = "Ripristina";
+        riga.append(etichetta, reset);
+        gruppo.append(riga);
+      }
+      contenitore.append(gruppo);
+    }
+    $("#contenuti-campi").disabled = false;
+    $("#salva-contenuti").disabled = false;
+    $("#contenuti-msg").textContent = "Modifica i campi e premi Pubblica i testi.";
+  } catch (e) {
+    $("#contenuti-msg").textContent = "Impossibile caricare i testi. Riprova.";
+    $("#ricarica-contenuti").hidden = false;
+  }
+}
+
+$("#ricarica-immagini").addEventListener("click", caricaImmagini);
+$("#immagini-opzioni").addEventListener("click", e => {
+  const reset = e.target.closest("button[data-stagione]");
+  if (!reset) return;
+  const campo = $(`#immagini-opzioni [name="${reset.dataset.stagione}"]`);
+  if (campo) { campo.value = FOTO_PREDEFINITE[reset.dataset.stagione]; campo.focus(); }
+});
+$("#form-immagini").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!isAdmin(auth.currentUser)) return;
+  const valori = Object.fromEntries($$("#immagini-opzioni input").map(campo => [campo.name, campo.value.trim()]));
+  for (const [stagione, valore] of Object.entries(valori)) {
+    if (!/^https:\/\/[^\s]+$/i.test(valore) && !/^assets\/[a-z0-9/_%.\-]+$/i.test(valore)) {
+      $("#immagini-msg").textContent = `Indirizzo non valido per ${stagione}: usa HTTPS o un percorso assets/.`;
+      return;
+    }
+  }
+  $("#immagini-campi").disabled = true;
+  $("#salva-immagini").disabled = true;
+  $("#immagini-msg").textContent = "Pubblicazione…";
+  try {
+    await salvaImmagini(app, valori);
+    $("#immagini-msg").textContent = "Foto pubblicate. La Home si aggiorna automaticamente.";
+  } catch (e) {
+    $("#immagini-msg").textContent = "Pubblicazione non riuscita. Riprova.";
+  } finally {
+    $("#immagini-campi").disabled = false;
+    $("#salva-immagini").disabled = false;
+  }
+});
+
+async function caricaImmagini() {
+  $("#immagini-campi").disabled = true;
+  $("#salva-immagini").disabled = true;
+  $("#ricarica-immagini").hidden = true;
+  try {
+    const valori = await leggiImmagini(app);
+    const contenitore = $("#immagini-opzioni");
+    contenitore.replaceChildren();
+    for (const [stagione] of Object.entries(FOTO_PREDEFINITE)) {
+      const riga = document.createElement("div");
+      riga.className = "admin-content-row";
+      const etichetta = document.createElement("label");
+      etichetta.textContent = stagione[0].toUpperCase() + stagione.slice(1);
+      const campo = document.createElement("input");
+      campo.type = "text";
+      campo.inputMode = "url";
+      campo.name = stagione;
+      campo.value = valori[stagione];
+      campo.maxLength = 500;
+      campo.required = true;
+      etichetta.append(campo);
+      const reset = document.createElement("button");
+      reset.type = "button";
+      reset.className = "btn-ghost";
+      reset.dataset.stagione = stagione;
+      reset.textContent = "Ripristina";
+      riga.append(etichetta, reset);
+      contenitore.append(riga);
+    }
+    $("#immagini-campi").disabled = false;
+    $("#salva-immagini").disabled = false;
+    $("#immagini-msg").textContent = "Usa indirizzi HTTPS delle foto oppure i percorsi assets/ inclusi nel sito.";
+  } catch (e) {
+    $("#immagini-msg").textContent = "Impossibile caricare le foto. Riprova.";
+    $("#ricarica-immagini").hidden = false;
   }
 }
 

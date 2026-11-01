@@ -55,6 +55,7 @@ jobs:
           V="${GITHUB_SHA::8}"
           sed -i "s#mountain.css#mountain.css?v=$V#g" index.html adm/index.html
           sed -i "s#./sezioni.js#./sezioni.js?v=$V#g" assets/app.js assets/adm.js
+          sed -i "s#./contenuti.js#./contenuti.js?v=$V#g" assets/app.js assets/adm.js
           sed -i "s#\"assets/app\.css\"#\"assets/app.css?v=$V\"#g; \
                   s#\"assets/app\.js\"#\"assets/app.js?v=$V\"#g" index.html
           sed -i "s#\"\.\./assets/app\.css\"#\"../assets/app.css?v=$V\"#g; \

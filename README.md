@@ -33,6 +33,15 @@ almeno una località deve restare visibile. Per aggiungere una località nuova
 servono coordinate e dati meteo nel generatore, oltre a un aggiornamento delle
 regole Firestore.
 
+Il pannello consente inoltre di nascondere singole webcam e di pubblicare i testi
+editoriali di Home, Previsione, Mappa, Specie, Webcam e Meteo. Le webcam non attive
+non compaiono nella pagina pubblica; il browser rilegge periodicamente lo stato
+generato dalla CI e le mostra di nuovo quando tornano attive. Le modifiche ai
+testi sono salvate in `impostazioni/contenuti`, quelle alle webcam in
+`impostazioni/webcam`; entrambe richiedono le regole Firestore aggiornate.
+Le foto delle quattro stagioni si possono sostituire inserendo un URL HTTPS
+nel pannello; la scelta si salva in `impostazioni/immagini`.
+
 Verifiche: `python scripts/test_http_retry.py`; per i permessi avviare
 `firebase emulators:start --only firestore --project demo-mountain` e poi
 `python scripts/test_section_rules.py`.

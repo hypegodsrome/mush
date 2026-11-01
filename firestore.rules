@@ -57,6 +57,32 @@ service cloud.firestore {
             || request.resource.data.jenne);
     }
 
+    match /impostazioni/webcam {
+      allow get: if request.auth != null;
+      allow create, update: if admin()
+        && request.resource.data.keys().size() <= 60
+        && request.resource.data.values().hasOnly([true, false]);
+    }
+
+    match /impostazioni/contenuti {
+      allow get: if request.auth != null;
+      allow create, update: if admin()
+        && request.resource.data.keys().hasOnly(['testi'])
+        && request.resource.data.testi is map
+        && request.resource.data.testi.keys().size() <= 80;
+    }
+
+    match /impostazioni/immagini {
+      allow get: if request.auth != null;
+      allow create, update: if admin()
+        && request.resource.data.keys().hasAll(['primavera', 'estate', 'autunno', 'inverno'])
+        && request.resource.data.keys().hasOnly(['primavera', 'estate', 'autunno', 'inverno'])
+        && request.resource.data.primavera is string
+        && request.resource.data.estate is string
+        && request.resource.data.autunno is string
+        && request.resource.data.inverno is string;
+    }
+
     match /utenti/{uid} {
 
       // Ognuno vede se stesso, l'amministratore vede tutti.

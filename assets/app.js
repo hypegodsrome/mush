@@ -23,9 +23,14 @@ const stato = { dati: null, spot: null, specie: "porcino",
                 mappa: null, base: null, strati: {} };
 let sezioniVisibili = {};
 let luoghiVisibili = {};
+let webcamVisibili = {};
+let fotoHome = {};
 let amministratore = false;
 let stopSezioni = null;
 let stopLuoghi = null;
+let stopWebcam = null;
+let stopContenuti = null;
+let stopImmagini = null;
 
 // ==========================================================================
 // Utilita'
@@ -189,6 +194,12 @@ if (!configurato && inLocale) {
     stopSezioni = null;
     stopLuoghi?.();
     stopLuoghi = null;
+    stopWebcam?.();
+    stopWebcam = null;
+    stopContenuti?.();
+    stopContenuti = null;
+    stopImmagini?.();
+    stopImmagini = null;
     if (!u) return mostraGate();
 
     const { registraAccesso, isAdmin } = await import("./registro.js");
@@ -200,11 +211,13 @@ if (!configurato && inLocale) {
       return mostraGate("Questo account non ha più accesso al sito.");
     }
     try {
-      const { leggiSezioni, osservaSezioni, leggiLuoghi, osservaLuoghi } = await import("./sezioni.js");
-      const catalogo = await carica("spots");
+      const { leggiSezioni, osservaSezioni, leggiLuoghi, osservaLuoghi,
+        leggiWebcam, osservaWebcam } = await import("./sezioni.js");
+      const [catalogo, elencoWebcam] = await Promise.all([carica("spots"), carica("webcam").catch(() => ({ cam: [] }))]);
       const idsLuoghi = catalogo.spots.map(s => s.id);
-      [sezioniVisibili, luoghiVisibili] = await Promise.all([
-        leggiSezioni(fbApp), leggiLuoghi(fbApp, idsLuoghi),
+      const idsWebcam = elencoWebcam.cam.map(c => c.id);
+      [sezioniVisibili, luoghiVisibili, webcamVisibili] = await Promise.all([
+        leggiSezioni(fbApp), leggiLuoghi(fbApp, idsLuoghi), leggiWebcam(fbApp, idsWebcam),
       ]);
       apriApp(u, { admin: isAdmin(u), registro: !esito.errore });
       stopSezioni = osservaSezioni(fbApp, valori => {
@@ -214,6 +227,17 @@ if (!configurato && inLocale) {
       stopLuoghi = osservaLuoghi(fbApp, idsLuoghi, valori => {
         if (JSON.stringify(valori) !== JSON.stringify(luoghiVisibili)) location.reload();
       }, () => mostraGate("Impossibile verificare le località disponibili. Ricarica la pagina per riprovare."));
+      stopWebcam = osservaWebcam(fbApp, idsWebcam, valori => {
+        webcamVisibili = valori;
+        if (camsMontate) disegnaCams();
+      }, () => console.warn("Impostazioni webcam temporaneamente non disponibili."));
+      const { osservaContenuti, applicaContenuti, osservaImmagini } = await import("./contenuti.js");
+      stopContenuti = osservaContenuti(fbApp, testi => applicaContenuti(testi),
+        () => console.warn("Testi del sito temporaneamente non disponibili."));
+      stopImmagini = osservaImmagini(fbApp, immagini => {
+        fotoHome = immagini;
+        aggiornaFotoHome();
+      }, () => console.warn("Foto personalizzate temporaneamente non disponibili."));
     } catch (e) {
       mostraGate("Impossibile caricare le sezioni disponibili. Ricarica la pagina per riprovare.");
     }
@@ -1715,15 +1739,13 @@ function filtraSpecie() {
 // ==========================================================================
 // Vista: webcam
 //
-// Caricate solo a richiesta: nessun setInterval, nessun polling.
 // Vive e spente le decide la CI leggendo Last-Modified (dal browser non si
-// puo': quasi nessuna manda header CORS). Quando una stagionale riparte, al
-// giro successivo `viva` torna true e risale da sola nella griglia grande.
+// puo': quasi nessuna manda header CORS). Il browser rilegge il JSON mentre
+// la scheda e' aperta: una webcam riattivata torna visibile da sola.
 // ==========================================================================
 let camsMontate = false;
 
-const camsVive = () => (stato.dati.webcam?.cam || []).filter((c) => c.viva);
-const camsSpente = () => (stato.dati.webcam?.cam || []).filter((c) => !c.viva);
+const camsVive = () => (stato.dati.webcam?.cam || []).filter((c) => c.viva && webcamVisibili[c.id] !== false);
 
 function schedaCam(c, piccola) {
   // sandbox: lo stream e' di terzi e gira in un iframe. Gli si concede lo
@@ -1759,16 +1781,16 @@ function montaCams() {
     return;
   }
   camsMontate = true;
+  $("#btn-cams").addEventListener("click", async () => {
+    await ricaricaStatoCams();
+    aggiornaCams();
+  });
+  disegnaCams();
+}
 
-  const vive = camsVive(), spente = camsSpente();
-  $("#cams").innerHTML = vive.map((c) => schedaCam(c, false)).join("")
+function disegnaCams() {
+  $("#cams").innerHTML = camsVive().map((c) => schedaCam(c, false)).join("")
     || `<p class="muted small">Nessuna webcam attiva in questo momento.</p>`;
-
-  $("#cams-off-wrap").hidden = spente.length === 0;
-  $("#cams-off").innerHTML = spente.map((c) => schedaCam(c, true)).join("");
-  $("#cams-off-n").textContent = spente.length;
-
-  $("#btn-cams").addEventListener("click", aggiornaCams);
   $$("#v-webcam .cam").forEach((fig) => {
     fig.addEventListener("click", () => apriGrande(fig));
     fig.addEventListener("keydown", (e) => {
@@ -1777,6 +1799,22 @@ function montaCams() {
   });
   aggiornaCams();
 }
+
+async function ricaricaStatoCams() {
+  try {
+    const aggiornato = await carica("webcam");
+    if (aggiornato?.cam) {
+      stato.dati.webcam = aggiornato;
+      disegnaCams();
+    }
+  } catch (e) { console.warn("Aggiornamento stato webcam:", e); }
+}
+setInterval(() => {
+  if (!document.hidden && !$("#v-webcam").hidden && stato.dati?.webcam) ricaricaStatoCams();
+}, 5 * 60_000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !$("#v-webcam").hidden && stato.dati?.webcam) ricaricaStatoCams();
+});
 
 function aggiornaCams() {
   const t = Date.now();
@@ -2203,10 +2241,13 @@ function aggiornaFotoHome() {
   document.body.dataset.homeStagione = stagione;
   const [file, descrizione] = FOTO_STAGIONI[stagione];
   const img = $("#home-season-photo");
-  if (img.dataset.stagione === stagione) return;
-  img.src = "assets/seasons/" + file;
+  const src = fotoHome[stagione] || "assets/seasons/" + file;
+  if (img.dataset.src === src && img.dataset.stagione === stagione) return;
+  img.src = src;
+  $("#home-season-backdrop").src = src;
   img.alt = descrizione;
   img.dataset.stagione = stagione;
+  img.dataset.src = src;
 }
 setInterval(aggiornaFotoHome, 60_000);
 document.addEventListener("visibilitychange", () => {

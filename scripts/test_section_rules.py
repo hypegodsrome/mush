@@ -8,6 +8,9 @@ from urllib.error import HTTPError
 
 URL = "http://127.0.0.1:8080/v1/projects/demo-mountain/databases/(default)/documents/impostazioni/sezioni"
 PLACES_URL = URL.replace("/sezioni", "/luoghi")
+WEBCAM_URL = URL.replace("/sezioni", "/webcam")
+CONTENTS_URL = URL.replace("/sezioni", "/contenuti")
+IMAGES_URL = URL.replace("/sezioni", "/immagini")
 DEFAULTS = {key: {"booleanValue": True} for key in ("home", "previsione", "mappa", "specie", "webcam", "meteo")}
 
 
@@ -55,6 +58,34 @@ class SectionRulesTests(unittest.TestCase):
         self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, verified=False, url=PLACES_URL), 403)
         self.assertEqual(request("PATCH", "eug2002@gmail.com",
                                  {key: {"booleanValue": False} for key in fields}, url=PLACES_URL), 403)
+
+    def test_webcam_permissions(self):
+        fields = {"livata_360": {"booleanValue": True}, "monna_arrivo": {"booleanValue": False}}
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, url=WEBCAM_URL), 200)
+        self.assertEqual(request("GET", "visitor@example.test", url=WEBCAM_URL), 200)
+        self.assertEqual(request("PATCH", "visitor@example.test", fields, url=WEBCAM_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, verified=False, url=WEBCAM_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com",
+                                 {"livata_360": {"stringValue": "true"}}, url=WEBCAM_URL), 403)
+
+    def test_content_permissions(self):
+        fields = {"testi": {"mapValue": {"fields": {"home_title": {"stringValue": "Monte Livata"}}}}}
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, url=CONTENTS_URL), 200)
+        self.assertEqual(request("GET", "visitor@example.test", url=CONTENTS_URL), 200)
+        self.assertEqual(request("PATCH", "visitor@example.test", fields, url=CONTENTS_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, verified=False, url=CONTENTS_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com",
+                                 {"extra": {"booleanValue": True}}, url=CONTENTS_URL), 403)
+
+    def test_image_permissions(self):
+        fields = {key: {"stringValue": f"assets/seasons/{key}.png"} for key in
+                  ("primavera", "estate", "autunno", "inverno")}
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, url=IMAGES_URL), 200)
+        self.assertEqual(request("GET", "visitor@example.test", url=IMAGES_URL), 200)
+        self.assertEqual(request("PATCH", "visitor@example.test", fields, url=IMAGES_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com", fields, verified=False, url=IMAGES_URL), 403)
+        self.assertEqual(request("PATCH", "eug2002@gmail.com",
+                                 {**fields, "primavera": {"booleanValue": True}}, url=IMAGES_URL), 403)
 
 
 if __name__ == "__main__":
