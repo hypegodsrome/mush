@@ -110,8 +110,9 @@ WEBCAM = [
      "dove": "Immagine 4K, circa 1 MB",
      "url": "https://www.ramsatwebcams.it/montelivata_4k/foto/montelivata_view02.jpg"},
     {"id": "fiume_aniene", "nome": "Fiume Aniene - Subiaco",
-     "dove": "Fotogramma dalla diretta Vedetta - Subiaco",
-     "url": "https://vedetta.org/image-client/fiume-aniene/image.jpg"},
+     "dove": "Diretta Vedetta - Subiaco",
+     "hls": "https://5e0add8153fcd.streamlock.net:1936/vedetta/fiume-aniene.stream/playlist.m3u8",
+     "poster": "https://vedetta.org/image-client/fiume-aniene/image.jpg"},
     {"id": "monna_arrivo", "nome": "Monna dell'Orso - arrivo seggiovia",
      "dove": "1758 m - impianti sciistici",
      "url": "https://www.ramsatwebcams.it/monna002/foto/monna_arrivo2.jpg"},
@@ -233,7 +234,7 @@ def probe_webcam(c, adesso):
     giro successivo.
     """
     stato = {**c, "viva": False, "ultimo": None, "ore": None, "errore": None}
-    url = c.get("iframe") or c["url"]
+    url = c.get("iframe") or c.get("hls") or c["url"]
     try:
         req = urllib.request.Request(url)
         req.add_header("User-Agent", UA)
@@ -254,6 +255,12 @@ def probe_webcam(c, adesso):
         stato["viva"] = ctype.startswith("text/html")
         if not stato["viva"]:
             stato["errore"] = f"risposta inattesa: {ctype}"
+        return stato
+
+    if c.get("hls"):
+        stato["viva"] = ctype in ("application/vnd.apple.mpegurl", "application/x-mpegurl") and testa == b"#EXT"
+        if not stato["viva"]:
+            stato["errore"] = f"playlist HLS non valida ({ctype})"
         return stato
 
     # Un 200 puo' essere una pagina d'errore travestita: controlla i byte.

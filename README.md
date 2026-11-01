@@ -41,6 +41,9 @@ testi sono salvate in `impostazioni/contenuti`, quelle alle webcam in
 `impostazioni/webcam`; entrambe richiedono le regole Firestore aggiornate.
 Le foto delle quattro stagioni si possono sostituire inserendo un URL HTTPS
 nel pannello; la scelta si salva in `impostazioni/immagini`.
+Un campo di testo lasciato vuoto nell'editor nasconde quella scritta. La webcam
+del Fiume Aniene usa la diretta HLS di Vedetta, con riproduzione nativa dove
+disponibile e hls.js locale negli altri browser.
 
 Verifiche: `python scripts/test_http_retry.py`; per i permessi avviare
 `firebase emulators:start --only firestore --project demo-mountain` e poi

@@ -1744,6 +1744,67 @@ function filtraSpecie() {
 // la scheda e' aperta: una webcam riattivata torna visibile da sola.
 // ==========================================================================
 let camsMontate = false;
+let hlsCaricamento = null;
+const videoHls = new Map();
+const videoHlsInAttesa = new WeakSet();
+
+function caricaHls() {
+  if (window.Hls) return Promise.resolve(window.Hls);
+  if (!hlsCaricamento) hlsCaricamento = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "assets/vendor/hls.light.min.js";
+    script.onload = () => window.Hls ? resolve(window.Hls) : reject(new Error("Lettore HLS non disponibile"));
+    script.onerror = () => reject(new Error("Lettore HLS non caricato"));
+    document.head.append(script);
+  }).catch(e => { hlsCaricamento = null; throw e; });
+  return hlsCaricamento;
+}
+
+function fermaVideo(video) {
+  const player = videoHls.get(video);
+  if (player) { player.destroy(); videoHls.delete(video); }
+  video.pause();
+  video.removeAttribute("src");
+  delete video.dataset.hlsAttivo;
+  video.load();
+}
+
+function fermaVideoCams(radice) {
+  radice.querySelectorAll("video.cam-shot, video#lb-video").forEach(fermaVideo);
+}
+
+async function avviaVideoHls(video, cam, messaggio) {
+  if (videoHls.has(video) || video.dataset.hlsAttivo === cam.hls || videoHlsInAttesa.has(video)) return;
+  videoHlsInAttesa.add(video);
+  try {
+    const Hls = await caricaHls();
+    if (!video.isConnected || video.closest("#v-webcam")?.hidden || video.closest("dialog")?.open === false) return;
+    if (Hls.isSupported()) {
+      const player = new Hls({ enableWorker: false });
+      videoHls.set(video, player);
+      player.on(Hls.Events.ERROR, (_, errore) => {
+        if (errore.fatal) {
+          video.dataset.state = "err";
+          messaggio.textContent = "Diretta momentaneamente non disponibile.";
+        }
+      });
+      player.loadSource(cam.hls);
+      player.attachMedia(video);
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = cam.hls;
+    } else {
+      messaggio.textContent = "Diretta non supportata da questo browser.";
+      return;
+    }
+    video.dataset.hlsAttivo = cam.hls;
+    video.addEventListener("playing", () => {
+      delete video.dataset.state;
+      messaggio.textContent = "In diretta";
+    }, { once: true });
+    video.play().catch(() => { messaggio.textContent = "Tocca play per avviare la diretta."; });
+  } catch (e) { messaggio.textContent = "Diretta non raggiungibile. Riprova più tardi."; }
+  finally { videoHlsInAttesa.delete(video); }
+}
 
 const camsVive = () => (stato.dati.webcam?.cam || []).filter((c) => c.viva && webcamVisibili[c.id] !== false);
 
@@ -1755,13 +1816,15 @@ function schedaCam(c, piccola) {
   // arrivi la richiesta.
   // L'iframe non riceve i tocchi: se li prendesse lui, la tessera non si
   // aprirebbe mai. Il video si comanda a schermo intero.
-  const media = c.iframe
+  const media = c.hls
+    ? `<video class="cam-shot" muted autoplay playsinline preload="none" poster="${esc(c.poster || "")}" aria-label="${esc(c.nome)} in diretta"></video>`
+    : c.iframe
     ? `<iframe class="cam-shot" loading="lazy" allowfullscreen title="${esc(c.nome)}"
          referrerpolicy="no-referrer" tabindex="-1"
          sandbox="allow-scripts allow-presentation"></iframe>`
     : `<img class="cam-shot" alt="${esc(c.nome)}" loading="lazy" decoding="async"
          referrerpolicy="no-referrer">`;
-  return `<figure class="cam${piccola ? " is-off" : ""}${c.iframe ? " is-video" : ""}"
+  return `<figure class="cam${piccola ? " is-off" : ""}${c.iframe || c.hls ? " is-video" : ""}${c.hls ? " is-hls" : ""}"
             data-id="${esc(c.id)}" tabindex="0" role="button"
             aria-label="${esc(c.nome)} — apri a schermo intero">
       ${media}
@@ -1775,7 +1838,7 @@ function schedaCam(c, piccola) {
 }
 
 function montaCams() {
-  if (camsMontate) return;
+  if (camsMontate) { aggiornaCams(); return; }
   if (!stato.dati.webcam) {
     $("#cams").innerHTML = `<p class="muted small">Elenco webcam non disponibile.</p>`;
     return;
@@ -1789,6 +1852,7 @@ function montaCams() {
 }
 
 function disegnaCams() {
+  fermaVideoCams($("#cams"));
   $("#cams").innerHTML = camsVive().map((c) => schedaCam(c, false)).join("")
     || `<p class="muted small">Nessuna webcam attiva in questo momento.</p>`;
   $$("#v-webcam .cam").forEach((fig) => {
@@ -1825,6 +1889,7 @@ function aggiornaCams() {
     const el = $(".cam-shot", fig), msg = $(".cam-msg", fig);
 
     if (c.iframe) { el.src = c.iframe; msg.textContent = "Stream esterno."; return; }
+    if (c.hls) { avviaVideoHls(el, c, msg); return; }
 
     msg.textContent = c.viva ? "Caricamento…" : (c.errore || "non attiva");
     el.onload = () => { if (c.viva) msg.textContent = "Scaricata ora."; };
@@ -1848,14 +1913,20 @@ function apriGrande(fig) {
   if (!c) return;
 
   const dlg = $("#lb");
-  const media = $(".cam-shot", fig).cloneNode(true);
+  const media = c.hls ? document.createElement("video") : $(".cam-shot", fig).cloneNode(true);
   media.removeAttribute("tabindex");
   media.removeAttribute("loading");
   media.removeAttribute("class");
   media.removeAttribute("data-state");
-  media.id = c.iframe ? "lb-video" : "lb-img";
-  if (!c.iframe) media.alt = c.nome;
-  $("#lb-status").textContent = c.iframe ? "Stream fornito da una webcam esterna." : "";
+  media.id = c.iframe || c.hls ? "lb-video" : "lb-img";
+  if (c.hls) {
+    media.controls = true;
+    media.autoplay = true;
+    media.muted = true;
+    media.playsInline = true;
+    media.poster = c.poster || "";
+  } else if (!c.iframe) media.alt = c.nome;
+  $("#lb-status").textContent = c.iframe ? "Stream fornito da una webcam esterna." : c.hls ? "Caricamento diretta…" : "";
   media.addEventListener("error", () => {
     $("#lb-status").textContent = "Webcam non raggiungibile. Riprova più tardi.";
   });
@@ -1864,6 +1935,7 @@ function apriGrande(fig) {
   $("#lb-sub").textContent = c.viva ? c.dove : (c.errore || "non attiva");
   dlg.showModal();
   document.body.classList.add("webcam-open");
+  if (c.hls) avviaVideoHls(media, c, $("#lb-status"));
   $("#lb-close").focus();
 }
 
@@ -1887,6 +1959,7 @@ function avviaLightbox() {
   dlg.addEventListener("close", () => {
     if (fullscreenWebcam && document.fullscreenElement) document.exitFullscreen().catch(() => {});
     fullscreenWebcam = false;
+    fermaVideoCams($("#lb-media"));
     $("#lb-media").replaceChildren();
     document.body.classList.remove("webcam-open");
   });
@@ -2245,10 +2318,12 @@ function aggiornaFotoHome() {
   if (img.dataset.src === src && img.dataset.stagione === stagione) return;
   img.src = src;
   $("#home-season-backdrop").src = src;
+  $("#gate-season-photo").src = src;
   img.alt = descrizione;
   img.dataset.stagione = stagione;
   img.dataset.src = src;
 }
+aggiornaFotoHome();
 setInterval(aggiornaFotoHome, 60_000);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) aggiornaFotoHome();
@@ -2484,6 +2559,7 @@ function mostraVista(b) {
   if (!b || b.hidden || (!amministratore && sezioniVisibili[b.dataset.view] === false)) return;
   const v = b.dataset.view;
   document.body.classList.toggle("is-home", v === "home");
+  document.body.classList.toggle("is-webcam", v === "webcam");
   $$(".voce[data-view]").forEach((x) => x.classList.toggle("is-on", x === b));
   $$(".view").forEach((s) => { s.hidden = s.id !== "v-" + v; });
 
@@ -2500,6 +2576,7 @@ function mostraVista(b) {
   if (v === "specie") montaSpecie();
   if (v === "mappa") avviaMappa();
   if (v === "webcam") montaCams();
+  else fermaVideoCams($("#cams"));
   if (v === "meteo") caricaMeteoLib().then(() => { renderMeteo(); montaOrario(); });
   // Lo scorrimento delle ore va fermato uscendo dalla scheda: un timer che
   // continua a ridisegnare una vista nascosta e' solo batteria buttata.

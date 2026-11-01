@@ -210,11 +210,7 @@ $("#form-contenuti").addEventListener("submit", async e => {
   if (!isAdmin(auth.currentUser)) return;
   const testi = {};
   for (const voce of CONTENUTI) {
-    const valore = $(`#contenuti-opzioni [name="${voce.chiave}"]`)?.value.trim();
-    if (!valore) {
-      $("#contenuti-msg").textContent = `Compila “${voce.etichetta}” nella pagina ${voce.sezione}.`;
-      return;
-    }
+    const valore = $(`#contenuti-opzioni [name="${voce.chiave}"]`)?.value.trim() ?? "";
     if (valore !== voce.predefinito) testi[voce.chiave] = valore;
   }
   $("#contenuti-campi").disabled = true;

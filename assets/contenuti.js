@@ -87,7 +87,9 @@ export function applicaContenuti(testi, root = document) {
     const elemento = root.querySelector(voce.selettore);
     if (!elemento) continue;
     if (!originali.has(voce.chiave)) originali.set(voce.chiave, elemento.innerHTML);
-    if (Object.hasOwn(testi || {}, voce.chiave)) elemento.textContent = testi[voce.chiave];
+    const modificato = Object.hasOwn(testi || {}, voce.chiave);
+    elemento.hidden = modificato && testi[voce.chiave] === "";
+    if (modificato) elemento.textContent = testi[voce.chiave];
     else if (elemento.innerHTML !== originali.get(voce.chiave)) elemento.innerHTML = originali.get(voce.chiave);
   }
 }

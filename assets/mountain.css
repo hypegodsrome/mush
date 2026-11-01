@@ -129,6 +129,8 @@ h2 { letter-spacing: -.045em; margin-top: 36px; }
 .cam .cam-msg { display: none; }
 .cam .cam-shot[data-state="err"] ~ .cam-msg { display: block; top: 12px; bottom: auto; right: 12px; left: 12px; background: #2A2A2A; color: #FFFFFF; }
 .cam.is-video::after { pointer-events: none; }
+.cam.is-hls::after { display: none; }
+.cam.is-hls::before { content: "● LIVE"; position: absolute; z-index: 2; top: 12px; left: 12px; padding: 5px 8px; border-radius: 100px; background: #b62024; color: #fff; font-size: .64rem; font-weight: 800; letter-spacing: .08em; pointer-events: none; }
 .cam-actions { flex-wrap: wrap; }
 .lb { background: #2A2A2A; color: #FFFFFF; grid-template-rows: auto minmax(0, 1fr) auto; }
 .lb-bar { position: sticky; top: 0; z-index: 2; background: #2A2A2A; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); border-color: #ffffff33; }
@@ -282,11 +284,46 @@ body.is-home #v-home .livata-photo { background: transparent; }
 #v-home .livata-account { display: flex; justify-content: flex-end; gap: 10px; padding: 26px 0 max(32px, env(safe-area-inset-bottom)); }
 body.is-home #v-home .livata-account .btn-ghost { background: var(--home-card); color: var(--home-ink); border-color: var(--home-border); }
 .gate-livata-logo { width: min(250px, 70vw); height: auto; }
+.gate { isolation: isolate; overflow: hidden; background: linear-gradient(145deg, #25384b, #17242f); }
+.gate-season-photo { display: none; }
+.gate-card { position: relative; z-index: 1; width: min(100%, 460px); padding: clamp(28px, 5vw, 54px); text-align: left; background: #172634e8; border: 1px solid #ffffff35; color: #fff; box-shadow: 0 28px 90px #07132166; }
+.gate-card h1 { margin: 0 0 22px; line-height: 1; }
+.gate-card h2 { margin: 6px 0 18px; color: #fff; }
+.gate-livata-logo { display: block; width: clamp(190px, 24vw, 260px); }
+.gate-kicker { margin: 0 0 12px; color: #c7dce9; font-size: .68rem; font-weight: 700; letter-spacing: .2em; }
+.gate-sub { margin: 0 0 10px; color: #fff; font-size: clamp(1.6rem, 3vw, 2.5rem); font-weight: 600; line-height: 1.13; letter-spacing: -.055em; }
+.gate-description { margin: 0 0 28px; color: #dce8ef; font-size: 1rem; line-height: 1.6; }
+.gate-note, .gate-note a { color: #cad9e4; }
+.gate .btn-google { min-height: 52px; border: 0; border-radius: 16px; font-size: .95rem; box-shadow: 0 8px 28px #0003; }
+body.login-public .gate { display: flex; align-items: center; justify-content: flex-start; }
+body.login-public .gate-season-photo { display: block; position: absolute; z-index: -2; top: 0; right: 0; width: 62%; height: 100%; object-fit: cover; object-position: center; }
+body.login-public .gate::after { content: ""; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, #172634 0%, #172634f2 34%, #17263475 70%, #17263420 100%); pointer-events: none; }
+body.login-public .gate-card { margin-left: clamp(16px, 5vw, 88px); }
+@media (max-width: 700px) {
+  body.login-public .gate { justify-content: center; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
+  body.login-public .gate-season-photo { width: 100%; }
+  body.login-public .gate::after { background: #11233599; }
+  body.login-public .gate-card { margin: 0; width: min(100%, 430px); padding: clamp(26px, 7vw, 38px); }
+}
 .site-livata-logo { display: block; width: 145px; height: 68px; object-fit: contain; object-position: left center; filter: brightness(0) saturate(100%); }
 :root[data-tema="scuro"] .site-livata-logo { filter: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-tema]) .site-livata-logo { filter: none; } }
 .rail-brand { padding-bottom: 28px; }
 .mountain-heading { min-height: 68px; }
+.mountain-header-actions { display: flex; align-items: center; gap: 14px; }
+#btn-cams { display: none; align-items: center; gap: 7px; white-space: nowrap; }
+body.is-webcam #btn-cams { display: inline-flex; }
+.btn-cams-icon { font-size: 1.15rem; line-height: 1; }
+body.is-webcam .cam-update-time { margin: 0 0 22px; }
+@media (max-width: 900px) {
+  body.is-webcam .mountain-heading { gap: 8px; }
+  body.is-webcam .mountain-heading .site-livata-logo { width: 100px; height: 54px; }
+  body.is-webcam #btn-cams { padding: 8px 10px; font-size: .72rem; }
+}
+@media (max-width: 380px) {
+  body.is-webcam #btn-cams { width: 44px; padding: 0; justify-content: center; }
+  body.is-webcam .btn-cams-label { display: none; }
+}
 @media (max-width: 540px) {
   #v-home .livata-hero { min-height: 0; aspect-ratio: 3 / 4; }
   body[data-home-stagione="primavera"] #v-home .livata-hero,
