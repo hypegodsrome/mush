@@ -53,7 +53,7 @@
 <link rel="stylesheet" href="assets/app.css">
 <link rel="stylesheet" href="assets/mountain.css">
 </head>
-<body>
+<body class="is-home">
 
 <!-- ==================== GATE DI ACCESSO ==================== -->
 <div id="gate" class="gate" hidden>
@@ -133,35 +133,29 @@
 </nav>
 
 <main>
-<header class="mountain-heading"><a href="./" class="mountain-wordmark">Mountain<span> / SIMBRUINI</span></a><span class="mountain-coordinate">41°55′ N · 13°08′ E</span></header>
+<header class="mountain-heading"><a href="./" class="mountain-wordmark">Mountain<span> / SIMBRUINI</span></a><div class="mountain-head-actions"><span class="mountain-coordinate">41°55′ N · 13°08′ E</span><a id="home-adm" class="btn-ghost" href="adm/" hidden>Admin</a><button id="btn-home-logout" class="btn-ghost" type="button" aria-label="Esci">Esci</button></div></header>
 <p id="sezioni-vuote" class="controls" role="status" hidden>Le sezioni del sito sono temporaneamente non disponibili.</p>
 
 <section id="v-home" class="view">
   <div class="livata-hero">
-    <img class="livata-photo" src="https://ipcamlive.com/player/snapshot.php?alias=67d9301b52ea3" alt="Vista dalla webcam di Monte Livata" referrerpolicy="no-referrer">
+    <img id="home-season-photo" class="livata-photo" src="assets/seasons/autunno.png" alt="Monte Livata in autunno">
     <div class="livata-shade"></div>
     <div class="livata-hero-content">
       <span class="livata-kicker">MONTI SIMBRUINI · LAZIO</span>
       <img class="livata-logo" src="assets/livata.svg" alt="Livata">
       <h1>Monte Livata,<br>qui e ora.</h1>
-      <p>Una finestra sulla montagna: il panorama, le misure della stazione e le condizioni dei prossimi giorni.</p>
+      <p>Paesaggi, webcam, meteo e sentieri dei Monti Simbruini.</p>
       <button class="livata-primary" type="button" data-go="webcam">Guarda le webcam <span aria-hidden="true">↗</span></button>
     </div>
-    <div class="livata-photo-credit">Immagine dalla webcam di Monte Livata · aggiornata dalla sorgente</div>
   </div>
   <div class="livata-intro">
     <div><span class="eyebrow">ESPLORA IL TERRITORIO</span><h2>La montagna, a portata di mano.</h2></div>
-    <p>Osserva il tempo a Monte Livata, scopri la mappa dei Simbruini e consulta le previsioni per la zona.</p>
+    <p>Osserva il panorama, controlla il meteo e scopri i luoghi sulla mappa.</p>
   </div>
   <div class="livata-shortcuts">
-    <button class="livata-shortcut" type="button" data-go="meteo"><span class="livata-shortcut-icon">◷</span><span><b>Stazione meteo</b><small>Le misure attuali da Monte Livata</small></span><span aria-hidden="true">↗</span></button>
-    <button class="livata-shortcut" type="button" data-go="mappa"><span class="livata-shortcut-icon">⌖</span><span><b>Esplora la mappa</b><small>Luoghi, sentieri e condizioni</small></span><span aria-hidden="true">↗</span></button>
-    <button class="livata-shortcut" type="button" data-go="previsione"><span class="livata-shortcut-icon">✳</span><span><b>Previsione</b><small>I prossimi giorni nei Simbruini</small></span><span aria-hidden="true">↗</span></button>
+    <button class="livata-shortcut" type="button" data-go="meteo"><span class="livata-shortcut-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14.5V5a3 3 0 0 1 6 0v9.5a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/></svg></span><span class="livata-shortcut-copy"><b>Stazione meteo</b><small>Le misure attuali da Monte Livata</small></span><span class="livata-shortcut-arrow" aria-hidden="true">↗</span></button>
+    <button class="livata-shortcut" type="button" data-go="mappa"><span class="livata-shortcut-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 5 7-2 6 2 7-2v16l-7 2-6-2-7 2zM9 3v16m6-14v16"/></svg></span><span class="livata-shortcut-copy"><b>Esplora la mappa</b><small>Luoghi, sentieri e condizioni</small></span><span class="livata-shortcut-arrow" aria-hidden="true">↗</span></button>
   </div>
-  <section class="livata-station" aria-labelledby="livata-station-title">
-    <div class="livata-station-head"><div><span class="eyebrow">DATI OSSERVATI</span><h2 id="livata-station-title">Monte Livata, adesso</h2></div><span id="home-station-time" class="muted small"></span></div>
-    <div id="home-station" class="livata-station-grid"></div>
-  </section>
 </section>
 
 <!-- ---------- PREVISIONE ---------- -->

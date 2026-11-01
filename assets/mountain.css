@@ -184,3 +184,34 @@ body.webcam-open { overflow: hidden; }
   #lb-full { order: 2; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* Home: seasonal photography is always shown in full, at its natural ratio. */
+body.is-home .guscio { grid-template-columns: minmax(0, 1fr); }
+body.is-home .rail { display: none; }
+.mountain-head-actions { display: flex; align-items: center; gap: 12px; }
+body:not(.is-home) #home-adm, body:not(.is-home) #btn-home-logout { display: none; }
+#v-home .livata-hero { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); align-items: center; min-height: 0; padding: 0; background: #3B4C5E; }
+#v-home .livata-photo { position: static; z-index: auto; order: 2; display: block; width: 100%; height: auto; max-height: 700px; object-fit: contain; background: #263849; }
+#v-home .livata-shade { display: none; }
+#v-home .livata-hero-content { order: 1; min-width: 0; padding: clamp(30px, 5vw, 72px); }
+#v-home .livata-hero h1 { font-size: clamp(2.6rem, 5.3vw, 5.5rem); }
+#v-home .livata-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#v-home .livata-shortcut { display: grid; grid-template-columns: 48px minmax(0, 1fr) 18px; align-items: center; gap: 16px; min-height: 106px; padding: 18px; }
+.livata-shortcut-copy { min-width: 0; }
+.livata-shortcut-icon svg { display: block; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#v-home .livata-shortcut-arrow { align-self: center; margin: 0; }
+@media (max-width: 900px) {
+  body.is-home { padding-bottom: 0; }
+  body.is-home main { padding-bottom: 48px; }
+  #v-home .livata-hero { grid-template-columns: minmax(0, 1fr); }
+  #v-home .livata-photo { order: 1; max-height: 600px; }
+  #v-home .livata-hero-content { order: 2; padding: 32px; }
+}
+@media (max-width: 540px) {
+  #v-home .livata-shortcuts { grid-template-columns: minmax(0, 1fr); }
+  #v-home .livata-photo { max-height: 75dvh; }
+  #v-home .livata-hero-content { padding: 26px 22px 32px; }
+  #v-home .livata-hero h1 { font-size: clamp(2.7rem, 10vw, 4rem); }
+  .mountain-head-actions { gap: 6px; }
+  #btn-home-logout, #home-adm { padding: 8px 10px; font-size: .8rem; }
+}

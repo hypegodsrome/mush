@@ -156,6 +156,7 @@ function apriApp(utente, opz = {}) {
   // Non e' una misura di sicurezza - chi conosce l'indirizzo ci arriva
   // comunque, e a quel punto sono le regole di Firestore a fermarlo.
   $("#link-adm").hidden = !opz.admin;
+  $("#home-adm").hidden = !opz.admin;
   // Senza questo catch un errore di render finisce in una promise rifiutata:
   // console muta e pagina a meta', senza che nessuno se ne accorga.
   avvia().catch((e) => {
@@ -168,6 +169,7 @@ function apriApp(utente, opz = {}) {
 if (!configurato && inLocale) {
   console.warn("Firebase non configurato: accesso libero perché sei in locale.");
   $("#btn-logout").hidden = true;
+  $("#btn-home-logout").hidden = true;
   apriApp(null);
 } else if (!configurato) {
   mostraGate("Firebase non è ancora configurato: compila assets/firebase-config.js "
@@ -246,6 +248,7 @@ if (!configurato && inLocale) {
   });
 
   $("#btn-logout").addEventListener("click", () => signOut(auth));
+  $("#btn-home-logout").addEventListener("click", () => signOut(auth));
 }
 
 // ==========================================================================
@@ -277,7 +280,7 @@ async function avvia() {
   }
 
   riempiSelettori();
-  renderHome();
+  aggiornaFotoHome();
   renderPrevisione();
   attivaTab();
   avviaLightbox();
@@ -2182,24 +2185,32 @@ function htmlStazione(st) {
       </p>`;
 }
 
-function renderHome() {
-  const st = stato.dati.stazione;
-  const wrap = $("#home-station");
-  if (!st) {
-    wrap.innerHTML = '<p class="muted">Misure della stazione temporaneamente non disponibili.</p>';
-    return;
-  }
-  const misura = (value, unit) => value == null ? "n/d"
-    : esc(String(value).replace(".", ",")) + ' <small>' + unit + '</small>';
-  wrap.innerHTML = [
-    ["Temperatura", st.temp, "°C"],
-    ["Umidità", st.umidita, "%"],
-    ["Pioggia oggi", st.pioggia_oggi, "mm"],
-    ["Vento", st.vento_kmh, "km/h"],
-  ].map(([name, value, unit]) => `<div class="livata-measure"><span>${name}</span><b>${misura(value, unit)}</b></div>`).join("");
-  $("#home-station-time").textContent = st.aggiornamento
-    ? "Ultimo aggiornamento: " + st.aggiornamento : "";
+const FOTO_STAGIONI = {
+  inverno: ["inverno.png", "Monte Livata innevato in inverno"],
+  primavera: ["primavera.png", "Prato fiorito a Monte Livata in primavera"],
+  estate: ["estate.png", "Panorama dei Simbruini in estate"],
+  autunno: ["autunno.png", "Bosco di Monte Livata in autunno"],
+};
+function stagioneHome(data = new Date()) {
+  const mese = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Rome", month: "numeric",
+  }).format(data));
+  return mese === 12 || mese <= 2 ? "inverno"
+    : mese <= 5 ? "primavera" : mese <= 8 ? "estate" : "autunno";
 }
+function aggiornaFotoHome() {
+  const stagione = stagioneHome();
+  const [file, descrizione] = FOTO_STAGIONI[stagione];
+  const img = $("#home-season-photo");
+  if (img.dataset.stagione === stagione) return;
+  img.src = "assets/seasons/" + file;
+  img.alt = descrizione;
+  img.dataset.stagione = stagione;
+}
+setInterval(aggiornaFotoHome, 60_000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) aggiornaFotoHome();
+});
 
 function renderStazione() {
   const st = stato.dati.stazione;
@@ -2430,6 +2441,7 @@ function applicaSezioni() {
 function mostraVista(b) {
   if (!b || b.hidden || (!amministratore && sezioniVisibili[b.dataset.view] === false)) return;
   const v = b.dataset.view;
+  document.body.classList.toggle("is-home", v === "home");
   $$(".voce[data-view]").forEach((x) => x.classList.toggle("is-on", x === b));
   $$(".view").forEach((s) => { s.hidden = s.id !== "v-" + v; });
 
